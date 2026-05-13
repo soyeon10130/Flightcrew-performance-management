@@ -428,7 +428,6 @@
     </nav>
     <div class="sidebar-bottom">
       <button class="add-btn" onclick="openAddModal()">+ 새 기록 추가</button>
-      <button class="add-btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='var(--bg3)'" onclick="openNewMemberModal()">+ 신규 직원 등록</button>
     </div>
   </aside>
 
@@ -538,54 +537,13 @@
           </div>
         </div>
         <table>
-          <thead><tr><th>연도</th><th>날짜</th><th>이름</th><th>직위</th><th>유형</th><th>점수</th><th>안건</th><th>삭제</th></tr></thead>
+          <thead><tr><th>연도</th><th>날짜</th><th>이름</th><th>직위</th><th>유형</th><th>점수</th><th>안건</th><th>액션</th></tr></thead>
           <tbody id="hist-body"></tbody>
         </table>
       </div>
     </div>
 
   </main>
-</div>
-
-<!-- New Member modal -->
-<div class="modal-overlay" id="new-member-modal">
-  <div class="modal">
-    <div class="modal-title">신규 직원 등록</div>
-    <div style="background:var(--green-bg);border:1px solid rgba(76,175,125,0.25);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--green-text);">
-      ✓ 신규 직원은 입사와 동시에 기본 <strong>100점</strong>이 자동 부여됩니다.
-    </div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label">이름 *</label>
-        <input class="form-input" type="text" id="nm-name" placeholder="홍길동">
-      </div>
-      <div class="form-group">
-        <label class="form-label">사번 *</label>
-        <input class="form-input" type="text" id="nm-id" placeholder="P261001">
-      </div>
-      <div class="form-group">
-        <label class="form-label">직위 *</label>
-        <select class="form-select" id="nm-pos">
-          <option value="부기장">부기장</option>
-          <option value="기장">기장</option>
-          <option value="항로기장">항로기장</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">입사일 *</label>
-        <input class="form-input" type="date" id="nm-date">
-      </div>
-      <div class="form-group full">
-        <label class="form-label">비고 (선택)</label>
-        <input class="form-input" type="text" id="nm-note" placeholder="예: 경력직 입사, 전입 등">
-      </div>
-    </div>
-    <div id="nm-error" style="font-size:12px;color:var(--red-text);margin-top:10px;height:16px;"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('new-member-modal')">취소</button>
-      <button class="btn btn-primary" onclick="addNewMember()">등록하기</button>
-    </div>
-  </div>
 </div>
 
 <!-- Add modal -->
@@ -661,58 +619,64 @@
     </div>
     <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">이력</div>
     <table>
-      <thead><tr><th>연도</th><th>날짜</th><th>유형</th><th>점수</th><th>안건</th></tr></thead>
+      <thead><tr><th>연도</th><th>날짜</th><th>유형</th><th>점수</th><th>안건</th><th>액션</th></tr></thead>
       <tbody id="pm-history"></tbody>
     </table>
   </div>
 </div>
 
-<script type="module">
-// ═══════════════════════════════════════════════════════════
-// ██  FIREBASE 설정  ── 아래 값을 본인 프로젝트 값으로 교체하세요  ██
-// ═══════════════════════════════════════════════════════════
-import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc,
-         getDocs, addDoc, deleteDoc,
-         onSnapshot, setDoc, query,
-         orderBy }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<!-- Edit record modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">기록 수정</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">이름</label>
+        <input class="form-input" type="text" id="e-name" list="name-list" placeholder="이름 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">직위</label>
+        <select class="form-select" id="e-pos">
+          <option value="기장">기장</option>
+          <option value="부기장">부기장</option>
+          <option value="항로기장">항로기장</option>
+          <option value="-">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">유형</label>
+        <select class="form-select" id="e-type">
+          <option value="벌점">벌점</option>
+          <option value="상점">상점</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">점수</label>
+        <input class="form-input" type="number" id="e-score" min="1" max="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">부여 일자</label>
+        <input class="form-input" type="date" id="e-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">연도</label>
+        <input class="form-input" type="number" id="e-year" min="2020" max="2030">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">상정 안건</label>
+        <textarea class="form-textarea" id="e-reason"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
 
-const firebaseConfig = {
-  apiKey:            "AIzaSyBmkNdILswMZAPTeQwX5-tN7YzQazPXDRk",
-  authDomain:        "crew-performance-managem-e312e.firebaseapp.com",
-  projectId:         "crew-performance-managem-e312e",
-  storageBucket:     "crew-performance-managem-e312e.firebasestorage.app",
-  messagingSenderId: "154836909694",
-  appId:             "1:154836909694:web:16b765908ed30987a8a22f"
-};
-// ═══════════════════════════════════════════════════════════
-
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
-
-// ── 로딩 오버레이 ──────────────────────────────────────────
-function showLoading(msg='데이터 불러오는 중...') {
-  let el = document.getElementById('fb-loading');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'fb-loading';
-    el.style.cssText = 'position:fixed;inset:0;background:rgba(15,17,23,.85);z-index:8000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;';
-    el.innerHTML = `<div style="width:36px;height:36px;border:3px solid rgba(79,142,247,.3);border-top-color:#4f8ef7;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:#8b93a8;font-size:13px">${msg}</div>`;
-    if (!document.querySelector('#spin-style')) {
-      const s = document.createElement('style'); s.id='spin-style';
-      s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
-      document.head.appendChild(s);
-    }
-    document.body.appendChild(el);
-  } else { el.querySelector('div+div').textContent = msg; el.style.display='flex'; }
-}
-function hideLoading() {
-  const el = document.getElementById('fb-loading');
-  if (el) el.style.display = 'none';
-}
-
+<script>
 // ── Password lock ──────────────────────────────────────────
-const CORRECT_PW = '7894'; // ← 비밀번호 여기서 변경하세요
+const CORRECT_PW = '1234'; // ← 비밀번호 여기서 변경하세요
 
 function onPwInput(el) {
   const v = el.value;
@@ -729,10 +693,10 @@ function tryUnlock() {
     const ls = document.getElementById('lock-screen');
     ls.style.transition = 'opacity .3s';
     ls.style.opacity = '0';
-    setTimeout(async () => {
+    setTimeout(() => {
       ls.style.display = 'none';
       document.getElementById('main-shell').style.display = 'flex';
-      await initFirebaseData();
+      renderDashboard();
     }, 300);
   } else {
     const errEl = document.getElementById('lock-error');
@@ -746,8 +710,7 @@ function tryUnlock() {
 document.getElementById('lock-input').focus();
 // ──────────────────────────────────────────────────────────
 
-// ── Firebase 초기화 및 실시간 동기화 ──────────────────────
-const INITIAL_RECORDS = [
+const rawData = [
   {year:2023,date:"2023-09-20",name:"김효승",pos:"부기장",type:"벌점",score:1,reason:"9/20일 YP101 Late Show up으로 인한 상벌협의회 회부"},
   {year:2024,date:"2024-02-14",name:"이장영",pos:"부기장",type:"벌점",score:3,reason:"MISSED FLIGHT 로 인한 근무 규정 미준수"},
   {year:2024,date:"2024-03-29",name:"이석원",pos:"기장",type:"상점",score:3,reason:"우수한 대처로 준사고로 이어질 수 있는 EVENT 예방에 따른 상점 안건"},
@@ -766,7 +729,7 @@ const INITIAL_RECORDS = [
   {year:2026,date:"2026-03-10",name:"김지호",pos:"부기장",type:"벌점",score:3,reason:"3월 10일 621편 Missed Flight 발생"}
 ];
 
-const INITIAL_MEMBERS = [
+const memberBase = [
   {no:1,pos:"기장",name:"강달용",id:"P213011"},{no:2,pos:"기장",name:"강상진",id:"P243039"},{no:3,pos:"기장",name:"강성준",id:"P243002"},{no:4,pos:"기장",name:"강호준",id:"P243027"},{no:5,pos:"기장",name:"강흥건",id:"P233011"},{no:6,pos:"기장",name:"경진수",id:"P203008"},{no:7,pos:"기장",name:"고희덕",id:"P213001"},{no:8,pos:"기장",name:"김경석",id:"P223006"},{no:9,pos:"기장",name:"김경수",id:"P223005"},{no:10,pos:"기장",name:"김길주",id:"P243040"},
   {no:11,pos:"기장",name:"김남호",id:"P243041"},{no:12,pos:"기장",name:"김동섭",id:"P203018"},{no:13,pos:"기장",name:"김동환",id:"P213002"},{no:14,pos:"기장",name:"김선용",id:"P233033"},{no:15,pos:"기장",name:"김세훈",id:"P243003"},{no:16,pos:"기장",name:"김영길",id:"P243004"},{no:17,pos:"기장",name:"김영준",id:"P233012"},{no:18,pos:"기장",name:"김영필",id:"P203006"},{no:19,pos:"기장",name:"김용식",id:"P233034"},{no:20,pos:"기장",name:"김은수",id:"P203015"},
   {no:21,pos:"기장",name:"김일관",id:"P243005"},{no:22,pos:"기장",name:"김지웅",id:"P203012"},{no:23,pos:"기장",name:"김진환",id:"P203022"},{no:24,pos:"기장",name:"김치윤",id:"P243006"},{no:25,pos:"기장",name:"김홍진",id:"P233013"},{no:26,pos:"기장",name:"김훈A",id:"P213003"},{no:27,pos:"기장",name:"김훈B",id:"P243007"},{no:28,pos:"기장",name:"나종석",id:"P243042"},{no:29,pos:"기장",name:"남궁명",id:"P233014"},{no:30,pos:"기장",name:"노영호",id:"P243028"},
@@ -788,79 +751,16 @@ const INITIAL_MEMBERS = [
   {no:175,pos:"부기장",name:"허완",id:"P233049"},{no:176,pos:"부기장",name:"현경원",id:"P253020"},{no:177,pos:"부기장",name:"홍경수",id:"P253008"},{no:178,pos:"부기장",name:"홍인식",id:"P233032"},{no:179,pos:"부기장",name:"홍진영",id:"P223013"},{no:180,pos:"부기장",name:"황성민",id:"P243019"}
 ];
 
-let records = [];
-let memberBase = [];
+let records = [...rawData];
 let posFilter = '전체';
 let typeChartInst, yearChartInst, topChartInst;
-let unsubRecords = null;
-let unsubMembers = null;
 
-// ── Firebase 초기 데이터 시드 및 실시간 구독 ──────────────
-async function initFirebaseData() {
-  showLoading('Firebase 연결 중...');
-  try {
-    // 1) members 컬렉션이 비어있으면 초기 데이터 시드
-    const membersSnap = await getDocs(collection(db, 'members'));
-    if (membersSnap.empty) {
-      showLoading('초기 데이터 업로드 중...');
-      for (const m of INITIAL_MEMBERS) {
-        await setDoc(doc(db, 'members', m.id), m);
-      }
-    }
-
-    // 2) records 컬렉션이 비어있으면 초기 데이터 시드
-    const recordsSnap = await getDocs(collection(db, 'records'));
-    if (recordsSnap.empty) {
-      showLoading('이력 데이터 업로드 중...');
-      for (const r of INITIAL_RECORDS) {
-        await addDoc(collection(db, 'records'), r);
-      }
-    }
-
-    // 3) 실시간 구독 시작
-    startRealtimeSync();
-  } catch(e) {
-    hideLoading();
-    alert('Firebase 연결 오류: ' + e.message + '\n\nfirebaseConfig 값을 확인해주세요.');
-    console.error(e);
-  }
-}
-
-function startRealtimeSync() {
-  showLoading('실시간 동기화 시작...');
-
-  // members 실시간
-  unsubMembers = onSnapshot(collection(db, 'members'), snap => {
-    memberBase = snap.docs.map(d => d.data()).sort((a,b)=>a.no-b.no);
-    document.getElementById('name-list').innerHTML = memberBase.map(m=>`<option value="${m.name}">`).join('');
-    if (document.getElementById('page-members').classList.contains('active')) renderMembers();
-  });
-
-  // records 실시간
-  unsubRecords = onSnapshot(collection(db, 'records'), snap => {
-    records = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
-    hideLoading();
-    renderDashboard();
-    if (document.getElementById('page-members').classList.contains('active')) renderMembers();
-    if (document.getElementById('page-history').classList.contains('active'))  { updateYearFilter(); renderHistory(); }
-
-    // 실시간 동기화 인디케이터
-    showSyncBadge();
-  });
-}
-
-function showSyncBadge() {
-  let badge = document.getElementById('sync-badge');
-  if (!badge) {
-    badge = document.createElement('div');
-    badge.id = 'sync-badge';
-    badge.style.cssText = 'position:fixed;bottom:18px;right:18px;background:rgba(76,175,125,.18);border:1px solid rgba(76,175,125,.35);color:#7dd4a8;font-size:11px;padding:5px 12px;border-radius:20px;z-index:500;font-family:"DM Mono",monospace;transition:opacity .5s';
-    document.body.appendChild(badge);
-  }
-  badge.textContent = '● 실시간 동기화됨';
-  badge.style.opacity = '1';
-  setTimeout(() => badge.style.opacity = '0', 2500);
-}
+// Init
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) + ' 기준';
+const today = new Date();
+document.getElementById('f-date').value = today.toISOString().split('T')[0];
+document.getElementById('f-year').value = today.getFullYear();
+document.getElementById('name-list').innerHTML = memberBase.map(m=>`<option value="${m.name}">`).join('');
 
 function getScores() {
   const s = {};
@@ -1108,6 +1008,7 @@ function renderHistory() {
     return true;
   }).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('hist-body').innerHTML = list.map(r => {
+    const idx = records.indexOf(r);
     return `<tr>
       <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
       <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
@@ -1116,9 +1017,46 @@ function renderHistory() {
       <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
       <td class="mono" style="font-weight:500">${r.score}점</td>
       <td class="truncate" style="color:var(--text2);font-size:12px" title="${r.reason}">${r.reason}</td>
-      <td><button class="btn btn-danger" onclick="deleteRecord('${r._id}')">삭제</button></td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="openEditModal(${idx})" title="수정">✏️</button>
+        <button class="btn btn-danger" onclick="deleteRecord(${idx})" title="삭제">삭제</button>
+      </td>
     </tr>`;
   }).join('');
+}
+
+// --- Edit record ---
+let editIdx = -1;
+
+function openEditModal(idx) {
+  editIdx = idx;
+  const r = records[idx];
+  document.getElementById('e-name').value = r.name;
+  document.getElementById('e-pos').value = r.pos;
+  document.getElementById('e-type').value = r.type;
+  document.getElementById('e-score').value = r.score;
+  document.getElementById('e-date').value = r.date;
+  document.getElementById('e-year').value = r.year;
+  document.getElementById('e-reason').value = r.reason;
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function saveEdit() {
+  if (editIdx < 0) return;
+  const name = document.getElementById('e-name').value.trim();
+  const pos = document.getElementById('e-pos').value;
+  const type = document.getElementById('e-type').value;
+  const score = parseInt(document.getElementById('e-score').value) || 1;
+  const date = document.getElementById('e-date').value;
+  const year = parseInt(document.getElementById('e-year').value) || new Date().getFullYear();
+  const reason = document.getElementById('e-reason').value.trim();
+  if (!name || !date || !reason) { alert('이름, 일자, 안건을 모두 입력해주세요.'); return; }
+  records[editIdx] = {year, date, name, pos, type, score, reason};
+  editIdx = -1;
+  closeModal('edit-modal');
+  renderDashboard();
+  renderHistory();
+  renderMembers();
 }
 
 // --- Page switching ---
@@ -1144,13 +1082,7 @@ document.getElementById('f-name').addEventListener('change', function() {
   if (m) document.getElementById('f-pos').value = m.pos;
 });
 
-// Init UI date fields
-document.getElementById('today-date').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) + ' 기준';
-const _today = new Date();
-document.getElementById('f-date').value = _today.toISOString().split('T')[0];
-document.getElementById('f-year').value = _today.getFullYear();
-
-async function addRecord() {
+function addRecord() {
   const name = document.getElementById('f-name').value.trim();
   const pos = document.getElementById('f-pos').value;
   const type = document.getElementById('f-type').value;
@@ -1159,27 +1091,28 @@ async function addRecord() {
   const year = parseInt(document.getElementById('f-year').value) || new Date().getFullYear();
   const reason = document.getElementById('f-reason').value.trim();
   if (!name || !date || !reason) { alert('이름, 일자, 안건을 모두 입력해주세요.'); return; }
-  showLoading('저장 중...');
-  try {
-    await addDoc(collection(db, 'records'), {year,date,name,pos,type,score,reason});
-    closeModal('add-modal');
-    document.getElementById('f-name').value = '';
-    document.getElementById('f-reason').value = '';
-  } catch(e) {
-    hideLoading();
-    alert('저장 실패: ' + e.message);
-  }
+  records.push({year,date,name,pos,type,score,reason});
+  closeModal('add-modal');
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-reason').value = '';
+  renderDashboard();
 }
 
-async function deleteRecord(docId) {
+function deleteRecord(idx) {
   if (!confirm('이 기록을 삭제하시겠습니까?')) return;
-  showLoading('삭제 중...');
-  try {
-    await deleteDoc(doc(db, 'records', docId));
-  } catch(e) {
-    hideLoading();
-    alert('삭제 실패: ' + e.message);
-  }
+  records.splice(idx, 1);
+  renderDashboard();
+  renderHistory();
+  renderMembers();
+}
+
+function deleteFromPerson(idx, name, pos, id) {
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  records.splice(idx, 1);
+  renderDashboard();
+  renderMembers();
+  // refresh person modal in place
+  openPersonModal(name, pos, id);
 }
 
 function openPersonModal(name, pos, id) {
@@ -1195,87 +1128,29 @@ function openPersonModal(name, pos, id) {
   document.getElementById('pm-reward').textContent = rew + '점';
   const hist = records.filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('pm-history').innerHTML = hist.length
-    ? hist.map(r=>`<tr>
-        <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
-        <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
-        <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
-        <td class="mono" style="font-weight:500">${r.score}점</td>
-        <td style="color:var(--text2);font-size:12px">${r.reason}</td>
-      </tr>`).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">이력 없음</td></tr>';
+    ? hist.map(r=>{
+        const idx = records.indexOf(r);
+        return `<tr>
+          <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
+          <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
+          <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
+          <td class="mono" style="font-weight:500">${r.score}점</td>
+          <td style="color:var(--text2);font-size:12px">${r.reason}</td>
+          <td style="display:flex;gap:5px;white-space:nowrap">
+            <button class="btn btn-sm" onclick="closeModal('person-modal');openEditModal(${idx})" title="수정">✏️</button>
+            <button class="btn btn-danger" onclick="deleteFromPerson(${idx},'${name}','${pos}','${id}')" title="삭제">삭제</button>
+          </td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">이력 없음</td></tr>';
   document.getElementById('person-modal').classList.add('open');
 }
 
 document.getElementById('add-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('add-modal'); });
 document.getElementById('person-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('person-modal'); });
-document.getElementById('new-member-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('new-member-modal'); });
+document.getElementById('edit-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('edit-modal'); });
 
-function openNewMemberModal() {
-  // 기본값 세팅
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('nm-date').value = today;
-  document.getElementById('nm-name').value = '';
-  document.getElementById('nm-id').value = '';
-  document.getElementById('nm-note').value = '';
-  document.getElementById('nm-error').textContent = '';
-  document.getElementById('new-member-modal').classList.add('open');
-}
-
-async function addNewMember() {
-  const name = document.getElementById('nm-name').value.trim();
-  const id   = document.getElementById('nm-id').value.trim();
-  const pos  = document.getElementById('nm-pos').value;
-  const date = document.getElementById('nm-date').value;
-  const note = document.getElementById('nm-note').value.trim();
-  const errEl = document.getElementById('nm-error');
-
-  if (!name || !id || !date) {
-    errEl.textContent = '이름, 사번, 입사일은 필수 항목입니다.';
-    return;
-  }
-  if (memberBase.find(m => m.name === name)) {
-    errEl.textContent = `이미 등록된 이름입니다: ${name}`;
-    return;
-  }
-  if (memberBase.find(m => m.id === id)) {
-    errEl.textContent = `이미 사용 중인 사번입니다: ${id}`;
-    return;
-  }
-
-  const nextNo = memberBase.reduce((mx, m) => Math.max(mx, m.no), 0) + 1;
-  showLoading('직원 등록 중...');
-  try {
-    await setDoc(doc(db, 'members', id), { no: nextNo, pos, name, id });
-    closeModal('new-member-modal');
-    const membersNav = document.querySelector('.nav-item:nth-child(2)');
-    switchPage('members', membersNav);
-    document.getElementById('member-search').value = name;
-    renderMembers();
-    alert(`✓ ${name} (${pos} · ${id}) 이/가 등록되었습니다.\n기본 점수: 100점`);
-  } catch(e) {
-    hideLoading();
-    alert('등록 실패: ' + e.message);
-  }
-}
-
-// renderDashboard() is called after Firebase realtime sync
-
-// ── 전역 함수 노출 (module scope 우회) ──────────────────────
-window.onPwInput = onPwInput;
-window.tryUnlock = tryUnlock;
-window.openAddModal = openAddModal;
-window.closeModal = closeModal;
-window.addRecord = addRecord;
-window.deleteRecord = deleteRecord;
-window.openPersonModal = openPersonModal;
-window.switchPage = switchPage;
-window.filterPos = filterPos;
-window.renderMembers = renderMembers;
-window.renderHistory = renderHistory;
-window.renderDashboard = renderDashboard;
-window.openNewMemberModal = openNewMemberModal;
-window.addNewMember = addNewMember;
-window.updateYearFilter = updateYearFilter;
+// renderDashboard() is called after password unlock
 </script>
 </body>
 </html>
