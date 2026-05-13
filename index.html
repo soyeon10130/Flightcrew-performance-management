@@ -1259,6 +1259,23 @@ async function addNewMember() {
 }
 
 // renderDashboard() is called after Firebase realtime sync
+
+// ── 전역 함수 노출 (module scope 우회) ──────────────────────
+window.onPwInput = onPwInput;
+window.tryUnlock = tryUnlock;
+window.openAddModal = openAddModal;
+window.closeModal = closeModal;
+window.addRecord = addRecord;
+window.deleteRecord = deleteRecord;
+window.openPersonModal = openPersonModal;
+window.switchPage = switchPage;
+window.filterPos = filterPos;
+window.renderMembers = renderMembers;
+window.renderHistory = renderHistory;
+window.renderDashboard = renderDashboard;
+window.openNewMemberModal = openNewMemberModal;
+window.addNewMember = addNewMember;
+window.updateYearFilter = updateYearFilter;
 </script>
 </body>
 </html>
