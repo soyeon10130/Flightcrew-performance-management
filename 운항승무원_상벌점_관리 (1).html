@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>운항승무원 상벌점 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2537;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --text2: #8b93a8;
+    --text3: #555e75;
+    --accent: #4f8ef7;
+    --accent2: #2d5fc4;
+    --red: #e05252;
+    --red-bg: rgba(224,82,82,0.12);
+    --red-text: #f08080;
+    --green: #4caf7d;
+    --green-bg: rgba(76,175,125,0.12);
+    --green-text: #7dd4a8;
+    --amber: #e09e4f;
+    --amber-bg: rgba(224,158,79,0.12);
+    --amber-text: #f0c080;
+    --blue-bg: rgba(79,142,247,0.12);
+    --blue-text: #90b8fa;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .shell { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+  }
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo .ko { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+  .sidebar-logo .en { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: all .15s;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--bg3); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+  .nav-icon { font-size: 16px; width: 18px; text-align: center; }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .add-btn {
+    width: 100%;
+    padding: 9px 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background .15s;
+  }
+  .add-btn:hover { background: var(--accent2); }
+
+  /* Main */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-title { font-size: 20px; font-weight: 700; }
+  .page-date { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  /* Metric cards */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .metric {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .metric-val { font-size: 28px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .metric-val.red { color: var(--red); }
+  .metric-val.green { color: var(--green); }
+  .metric-val.amber { color: var(--amber); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* Charts row */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .chart-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
+  .chart-area { position: relative; }
+
+  /* Table */
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .table-header-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
+  .table-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .search-input, .filter-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px;
+    padding: 6px 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border .15s;
+  }
+  .search-input { width: 200px; }
+  .search-input:focus, .filter-select:focus { border-color: var(--accent); }
+  .filter-select option { background: var(--bg3); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg3); }
+
+  /* Badges & pills */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-penalty { background: var(--red-bg); color: var(--red-text); }
+  .badge-reward { background: var(--green-bg); color: var(--green-text); }
+
+  .score-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+  }
+  .score-great { background: var(--blue-bg); color: var(--blue-text); }
+  .score-ok { background: var(--green-bg); color: var(--green-text); }
+  .score-warn { background: var(--amber-bg); color: var(--amber-text); }
+
+  /* View tabs */
+  .view-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .view-tab {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text2);
+    transition: all .15s;
+    border: 1px solid transparent;
+  }
+  .view-tab:hover { background: var(--bg3); color: var(--text); }
+  .view-tab.active { background: var(--bg3); color: var(--accent); border-color: var(--border2); font-weight: 500; }
+
+  /* Legend */
+  .legend-strip {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 520px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { margin-bottom: 0; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { display: block; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 8px 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border .15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-select option { background: var(--bg3); }
+  .form-textarea { height: 80px; resize: vertical; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border2); cursor: pointer; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; font-weight: 500; transition: all .15s; }
+  .btn-ghost { background: transparent; color: var(--text2); }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-danger { background: var(--red-bg); color: var(--red-text); border-color: transparent; font-size: 12px; padding: 4px 10px; }
+  .btn-danger:hover { background: rgba(224,82,82,0.22); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; background: var(--bg3); color: var(--text2); border-color: var(--border); }
+  .btn-sm:hover { color: var(--text); border-color: var(--border2); }
+
+  /* Person modal */
+  .person-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 620px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .person-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  .person-stat {
+    background: var(--bg3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .person-stat-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .person-stat-val { font-size: 28px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  /* Page hidden */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Responsive text truncate */
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  .num-red { color: var(--red-text); font-weight: 500; font-family: 'DM Mono', monospace; }
+  .num-green { color: var(--green-text); font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  /* Lock screen */
+  #lock-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  .lock-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    width: 340px;
+    text-align: center;
+  }
+  .lock-icon { font-size: 32px; margin-bottom: 16px; color: var(--accent); }
+  .lock-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .lock-sub { font-size: 12px; color: var(--text3); margin-bottom: 28px; font-family: 'DM Mono', monospace; }
+  .lock-input {
+    width: 100%; padding: 10px 14px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-size: 18px; letter-spacing: 6px; text-align: center;
+    font-family: 'DM Mono', monospace; outline: none;
+    transition: border .15s;
+    margin-bottom: 14px;
+  }
+  .lock-input:focus { border-color: var(--accent); }
+  .lock-btn {
+    width: 100%; padding: 10px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+    transition: background .15s;
+  }
+  .lock-btn:hover { background: var(--accent2); }
+  .lock-error {
+    font-size: 12px; color: var(--red-text);
+    margin-top: 10px; height: 16px; transition: opacity .2s;
+  }
+  .lock-dots {
+    display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+  }
+  .lock-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--bg3); border: 1px solid var(--border2);
+    transition: background .15s;
+  }
+  .lock-dot.filled { background: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Lock screen -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-title">운항승무원 상벌점 관리</div>
+    <div class="lock-sub">CREW MGMT SYS · RESTRICTED</div>
+    <div class="lock-dots" id="lock-dots">
+      <div class="lock-dot" id="d0"></div>
+      <div class="lock-dot" id="d1"></div>
+      <div class="lock-dot" id="d2"></div>
+      <div class="lock-dot" id="d3"></div>
+    </div>
+    <input class="lock-input" type="password" id="lock-input" maxlength="4" placeholder="····" oninput="onPwInput(this)" onkeydown="if(event.key==='Enter')tryUnlock()">
+    <button class="lock-btn" onclick="tryUnlock()">접속</button>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
+<div class="shell" id="main-shell" style="display:none">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="ko">상벌점 관리</div>
+      <div class="en">CREW MGMT SYS</div>
+    </div>
+    <nav>
+      <div class="nav-item active" onclick="switchPage('dashboard', this)">
+        <span class="nav-icon">◈</span> 대시보드
+      </div>
+      <div class="nav-item" onclick="switchPage('members', this)">
+        <span class="nav-icon">◉</span> 승무원 명부
+      </div>
+      <div class="nav-item" onclick="switchPage('history', this)">
+        <span class="nav-icon">◎</span> 이력 관리
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="add-btn" onclick="openAddModal()">+ 새 기록 추가</button>
+      <button class="add-btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='var(--bg3)'" onclick="openNewMemberModal()">+ 신규 직원 등록</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">운항승무원 상벌점 현황</div>
+          <div class="page-date" id="today-date"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="filter-select" id="dash-year" onchange="renderDashboard()" style="font-size:12px">
+            <option value="all">전체 연도</option>
+          </select>
+          <select class="filter-select" id="dash-pos" onchange="renderDashboard()" style="font-size:12px">
+            <option value="all">전체 직급</option>
+            <option value="기장">기장</option>
+            <option value="부기장">부기장</option>
+            <option value="항로기장">항로기장</option>
+          </select>
+        </div>
+      </div>
+      <div class="legend-strip">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>정상 (100점)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>우수 (100점 초과)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>주의 (100점 미만)</div>
+      </div>
+      <div class="metrics" id="metrics-row"></div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">유형별 현황</div>
+          <div class="chart-area" style="height:180px"><canvas id="typeChart" role="img" aria-label="유형별 상벌점 현황"></canvas></div>
+          <div id="type-legend" style="display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--text2)"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title" id="year-chart-title">연도별 벌점 추이</div>
+          <div class="chart-area" style="height:180px"><canvas id="yearChart" role="img" aria-label="연도별 벌점 추이"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-title">벌점 상위 인원</div>
+        <div class="chart-area" style="height:200px"><canvas id="topChart" role="img" aria-label="벌점 상위 인원"></canvas></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title">최근 이력</span>
+        </div>
+        <table>
+          <thead><tr><th>날짜</th><th>이름</th><th>직위</th><th>유형</th><th>점수</th><th>안건</th></tr></thead>
+          <tbody id="recent-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div id="page-members" class="page">
+      <div class="page-header">
+        <div class="page-title">승무원 명부</div>
+      </div>
+      <div class="view-tabs" id="pos-tabs">
+        <div class="view-tab active" onclick="filterPos('전체',this)">전체</div>
+        <div class="view-tab" onclick="filterPos('기장',this)">기장</div>
+        <div class="view-tab" onclick="filterPos('부기장',this)">부기장</div>
+        <div class="view-tab" onclick="filterPos('항로기장',this)">항로기장</div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title">승무원 목록</span>
+          <div class="table-filters">
+            <input class="search-input" type="text" id="member-search" placeholder="이름 또는 사번 검색..." oninput="renderMembers()">
+            <select class="filter-select" id="score-filter" onchange="renderMembers()">
+              <option value="all">전체 점수</option>
+              <option value="great">우수 (100점 초과)</option>
+              <option value="normal">정상 (100점)</option>
+              <option value="warn">주의 (100점 미만)</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>순번</th><th>직위</th><th>이름</th><th>사번</th><th>벌점</th><th>상점</th><th>총점</th><th>상세</th></tr></thead>
+          <tbody id="member-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="page-history" class="page">
+      <div class="page-header">
+        <div class="page-title">이력 관리</div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title">전체 이력</span>
+          <div class="table-filters">
+            <input class="search-input" type="text" id="hist-search" placeholder="이름 또는 안건 검색..." oninput="renderHistory()">
+            <select class="filter-select" id="hist-type" onchange="renderHistory()">
+              <option value="all">전체</option>
+              <option value="벌점">벌점</option>
+              <option value="상점">상점</option>
+            </select>
+            <select class="filter-select" id="hist-year" onchange="renderHistory()">
+              <option value="all">전체 연도</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>연도</th><th>날짜</th><th>이름</th><th>직위</th><th>유형</th><th>점수</th><th>안건</th><th>삭제</th></tr></thead>
+          <tbody id="hist-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- New Member modal -->
+<div class="modal-overlay" id="new-member-modal">
+  <div class="modal">
+    <div class="modal-title">신규 직원 등록</div>
+    <div style="background:var(--green-bg);border:1px solid rgba(76,175,125,0.25);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--green-text);">
+      ✓ 신규 직원은 입사와 동시에 기본 <strong>100점</strong>이 자동 부여됩니다.
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">이름 *</label>
+        <input class="form-input" type="text" id="nm-name" placeholder="홍길동">
+      </div>
+      <div class="form-group">
+        <label class="form-label">사번 *</label>
+        <input class="form-input" type="text" id="nm-id" placeholder="P261001">
+      </div>
+      <div class="form-group">
+        <label class="form-label">직위 *</label>
+        <select class="form-select" id="nm-pos">
+          <option value="부기장">부기장</option>
+          <option value="기장">기장</option>
+          <option value="항로기장">항로기장</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">입사일 *</label>
+        <input class="form-input" type="date" id="nm-date">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">비고 (선택)</label>
+        <input class="form-input" type="text" id="nm-note" placeholder="예: 경력직 입사, 전입 등">
+      </div>
+    </div>
+    <div id="nm-error" style="font-size:12px;color:var(--red-text);margin-top:10px;height:16px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-member-modal')">취소</button>
+      <button class="btn btn-primary" onclick="addNewMember()">등록하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-title">상벌점 기록 추가</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">이름 *</label>
+        <input class="form-input" type="text" id="f-name" list="name-list" placeholder="이름 입력">
+        <datalist id="name-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">직위</label>
+        <select class="form-select" id="f-pos">
+          <option value="기장">기장</option>
+          <option value="부기장">부기장</option>
+          <option value="항로기장">항로기장</option>
+          <option value="-">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">유형 *</label>
+        <select class="form-select" id="f-type">
+          <option value="벌점">벌점</option>
+          <option value="상점">상점</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">점수 *</label>
+        <input class="form-input" type="number" id="f-score" min="1" max="10" value="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">부여 일자 *</label>
+        <input class="form-input" type="date" id="f-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">연도</label>
+        <input class="form-input" type="number" id="f-year" min="2020" max="2030">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">상정 안건 *</label>
+        <textarea class="form-textarea" id="f-reason" placeholder="안건 내용을 입력하세요"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-modal')">취소</button>
+      <button class="btn btn-primary" onclick="addRecord()">추가하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Person modal -->
+<div class="modal-overlay" id="person-modal">
+  <div class="person-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="modal-title" id="pm-name" style="margin-bottom:0"></div>
+      <button class="btn btn-ghost" onclick="closeModal('person-modal')">닫기</button>
+    </div>
+    <div class="person-stats">
+      <div class="person-stat">
+        <div class="person-stat-label">총점</div>
+        <div class="person-stat-val" id="pm-total"></div>
+      </div>
+      <div class="person-stat">
+        <div class="person-stat-label">누적 벌점</div>
+        <div class="person-stat-val" style="color:var(--red-text)" id="pm-penalty"></div>
+      </div>
+      <div class="person-stat">
+        <div class="person-stat-label">누적 상점</div>
+        <div class="person-stat-val" style="color:var(--green-text)" id="pm-reward"></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">이력</div>
+    <table>
+      <thead><tr><th>연도</th><th>날짜</th><th>유형</th><th>점수</th><th>안건</th></tr></thead>
+      <tbody id="pm-history"></tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+// ═══════════════════════════════════════════════════════════
+// ██  FIREBASE 설정  ── 아래 값을 본인 프로젝트 값으로 교체하세요  ██
+// ═══════════════════════════════════════════════════════════
+import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc,
+         getDocs, addDoc, deleteDoc,
+         onSnapshot, setDoc, query,
+         orderBy }                 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBmkNdILswMZAPTeQwX5-tN7YzQazPXDRk",
+  authDomain:        "crew-performance-managem-e312e.firebaseapp.com",
+  projectId:         "crew-performance-managem-e312e",
+  storageBucket:     "crew-performance-managem-e312e.firebasestorage.app",
+  messagingSenderId: "154836909694",
+  appId:             "1:154836909694:web:16b765908ed30987a8a22f"
+};
+// ═══════════════════════════════════════════════════════════
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── 로딩 오버레이 ──────────────────────────────────────────
+function showLoading(msg='데이터 불러오는 중...') {
+  let el = document.getElementById('fb-loading');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'fb-loading';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(15,17,23,.85);z-index:8000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;';
+    el.innerHTML = `<div style="width:36px;height:36px;border:3px solid rgba(79,142,247,.3);border-top-color:#4f8ef7;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:#8b93a8;font-size:13px">${msg}</div>`;
+    if (!document.querySelector('#spin-style')) {
+      const s = document.createElement('style'); s.id='spin-style';
+      s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(s);
+    }
+    document.body.appendChild(el);
+  } else { el.querySelector('div+div').textContent = msg; el.style.display='flex'; }
+}
+function hideLoading() {
+  const el = document.getElementById('fb-loading');
+  if (el) el.style.display = 'none';
+}
+
+// ── Password lock ──────────────────────────────────────────
+const CORRECT_PW = '7894'; // ← 비밀번호 여기서 변경하세요
+
+function onPwInput(el) {
+  const v = el.value;
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < v.length);
+  }
+  document.getElementById('lock-error').textContent = '';
+  if (v.length === 4) setTimeout(tryUnlock, 120);
+}
+
+function tryUnlock() {
+  const val = document.getElementById('lock-input').value;
+  if (val === CORRECT_PW) {
+    const ls = document.getElementById('lock-screen');
+    ls.style.transition = 'opacity .3s';
+    ls.style.opacity = '0';
+    setTimeout(async () => {
+      ls.style.display = 'none';
+      document.getElementById('main-shell').style.display = 'flex';
+      await initFirebaseData();
+    }, 300);
+  } else {
+    const errEl = document.getElementById('lock-error');
+    errEl.textContent = '비밀번호가 올바르지 않습니다';
+    document.getElementById('lock-input').value = '';
+    for (let i = 0; i < 4; i++) document.getElementById('d' + i).classList.remove('filled');
+    document.getElementById('lock-input').focus();
+  }
+}
+
+document.getElementById('lock-input').focus();
+// ──────────────────────────────────────────────────────────
+
+// ── Firebase 초기화 및 실시간 동기화 ──────────────────────
+const INITIAL_RECORDS = [
+  {year:2023,date:"2023-09-20",name:"김효승",pos:"부기장",type:"벌점",score:1,reason:"9/20일 YP101 Late Show up으로 인한 상벌협의회 회부"},
+  {year:2024,date:"2024-02-14",name:"이장영",pos:"부기장",type:"벌점",score:3,reason:"MISSED FLIGHT 로 인한 근무 규정 미준수"},
+  {year:2024,date:"2024-03-29",name:"이석원",pos:"기장",type:"상점",score:3,reason:"우수한 대처로 준사고로 이어질 수 있는 EVENT 예방에 따른 상점 안건"},
+  {year:2024,date:"2024-04-09",name:"김두효",pos:"-",type:"벌점",score:1,reason:"9/20일 YP101 Late Show up으로 인한 상벌협의회 회부"},
+  {year:2024,date:"2024-08-20",name:"정희중",pos:"기장",type:"벌점",score:1,reason:"8/20일 YP601 Late Show up으로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-01-15",name:"김상연",pos:"부기장",type:"벌점",score:1,reason:"12/28일 YP101 Late Show up으로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-02-07",name:"한정권",pos:"기장",type:"벌점",score:1,reason:"2/7일 YP731 Late Show up으로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-02-10",name:"김병욱",pos:"부기장",type:"벌점",score:1,reason:"2/10일 YP101 Late Show up으로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-01-15",name:"김용식",pos:"기장",type:"벌점",score:1,reason:"1/15일 YP731 음주측정 미실시로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-02-04",name:"이재형",pos:"기장",type:"벌점",score:1,reason:"2/4일 YP101 음주측정 미실시로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-02-17",name:"김용위",pos:"-",type:"벌점",score:2,reason:"2/17일 STH 자택대기 근무 규정 미준수로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-06-01",name:"정범수",pos:"부기장",type:"벌점",score:1,reason:"6/1일 YP101편 Late Show - up으로 인한 상벌협의회 회부"},
+  {year:2025,date:"2025-09-28",name:"정호영",pos:"기장",type:"벌점",score:1,reason:"9월 28일 801편 Late Show-up 발생"},
+  {year:2025,date:"2025-09-28",name:"윤정훈",pos:"부기장",type:"벌점",score:1,reason:"EPTA 자격 미유지로 인한 근무 불이행"},
+  {year:2025,date:"2025-10-06",name:"박성진",pos:"부기장",type:"벌점",score:1,reason:"10월 06일 101편 Late Show-up 발생"},
+  {year:2026,date:"2026-03-10",name:"김지호",pos:"부기장",type:"벌점",score:3,reason:"3월 10일 621편 Missed Flight 발생"}
+];
+
+const INITIAL_MEMBERS = [
+  {no:1,pos:"기장",name:"강달용",id:"P213011"},{no:2,pos:"기장",name:"강상진",id:"P243039"},{no:3,pos:"기장",name:"강성준",id:"P243002"},{no:4,pos:"기장",name:"강호준",id:"P243027"},{no:5,pos:"기장",name:"강흥건",id:"P233011"},{no:6,pos:"기장",name:"경진수",id:"P203008"},{no:7,pos:"기장",name:"고희덕",id:"P213001"},{no:8,pos:"기장",name:"김경석",id:"P223006"},{no:9,pos:"기장",name:"김경수",id:"P223005"},{no:10,pos:"기장",name:"김길주",id:"P243040"},
+  {no:11,pos:"기장",name:"김남호",id:"P243041"},{no:12,pos:"기장",name:"김동섭",id:"P203018"},{no:13,pos:"기장",name:"김동환",id:"P213002"},{no:14,pos:"기장",name:"김선용",id:"P233033"},{no:15,pos:"기장",name:"김세훈",id:"P243003"},{no:16,pos:"기장",name:"김영길",id:"P243004"},{no:17,pos:"기장",name:"김영준",id:"P233012"},{no:18,pos:"기장",name:"김영필",id:"P203006"},{no:19,pos:"기장",name:"김용식",id:"P233034"},{no:20,pos:"기장",name:"김은수",id:"P203015"},
+  {no:21,pos:"기장",name:"김일관",id:"P243005"},{no:22,pos:"기장",name:"김지웅",id:"P203012"},{no:23,pos:"기장",name:"김진환",id:"P203022"},{no:24,pos:"기장",name:"김치윤",id:"P243006"},{no:25,pos:"기장",name:"김홍진",id:"P233013"},{no:26,pos:"기장",name:"김훈A",id:"P213003"},{no:27,pos:"기장",name:"김훈B",id:"P243007"},{no:28,pos:"기장",name:"나종석",id:"P243042"},{no:29,pos:"기장",name:"남궁명",id:"P233014"},{no:30,pos:"기장",name:"노영호",id:"P243028"},
+  {no:31,pos:"기장",name:"박규태",id:"P213004"},{no:32,pos:"기장",name:"박병열",id:"P233016"},{no:33,pos:"기장",name:"박양주",id:"P243029"},{no:34,pos:"기장",name:"박일호",id:"P213014"},{no:35,pos:"기장",name:"박준성",id:"P233017"},{no:36,pos:"기장",name:"박형근",id:"P213005"},{no:37,pos:"기장",name:"배총태",id:"P203007"},{no:38,pos:"기장",name:"서동철",id:"P233018"},{no:39,pos:"기장",name:"서호균",id:"P203019"},{no:40,pos:"기장",name:"송다비라",id:"P243030"},
+  {no:41,pos:"기장",name:"송우익",id:"P243031"},{no:42,pos:"기장",name:"신경호",id:"P233019"},{no:43,pos:"기장",name:"신동훈",id:"P193002"},{no:44,pos:"기장",name:"신민철",id:"P233020"},{no:45,pos:"기장",name:"신지수",id:"P203004"},{no:46,pos:"기장",name:"연정호",id:"P243043"},{no:47,pos:"기장",name:"위충석",id:"P203001"},{no:48,pos:"기장",name:"유민상",id:"P223007"},{no:49,pos:"기장",name:"유우룡",id:"P203005"},{no:50,pos:"기장",name:"윤세기",id:"P243008"},
+  {no:51,pos:"기장",name:"윤완석",id:"P243020"},{no:52,pos:"기장",name:"윤태선",id:"P223008"},{no:53,pos:"기장",name:"이동수",id:"P213006"},{no:54,pos:"기장",name:"이병문",id:"P243032"},{no:55,pos:"기장",name:"이병욱",id:"P203010"},{no:56,pos:"기장",name:"이석원",id:"P233022"},{no:57,pos:"기장",name:"이세찬",id:"P243044"},{no:58,pos:"기장",name:"이승현",id:"P233035"},{no:59,pos:"기장",name:"이은상",id:"P193001"},{no:60,pos:"기장",name:"이장헌",id:"P233023"},
+  {no:61,pos:"기장",name:"이재현",id:"P233036"},{no:62,pos:"기장",name:"이재형",id:"P243045"},{no:63,pos:"기장",name:"이중엽",id:"P203002"},{no:64,pos:"기장",name:"이창훈",id:"P243009"},{no:65,pos:"기장",name:"이태권",id:"P243021"},{no:66,pos:"기장",name:"이혁제",id:"P243010"},{no:67,pos:"기장",name:"임동헌",id:"P243033"},{no:68,pos:"기장",name:"임승곤",id:"P243034"},{no:69,pos:"기장",name:"임원길",id:"P190001"},{no:70,pos:"기장",name:"임준호",id:"P233037"},
+  {no:71,pos:"기장",name:"장재원",id:"P243046"},{no:72,pos:"기장",name:"전승호",id:"P233024"},{no:73,pos:"기장",name:"전우태",id:"P243035"},{no:74,pos:"기장",name:"전지혁",id:"P203011"},{no:75,pos:"기장",name:"정권철",id:"P223009"},{no:76,pos:"기장",name:"정남석",id:"P243022"},{no:77,pos:"기장",name:"정재훈",id:"P213007"},{no:78,pos:"기장",name:"정진수",id:"P233025"},{no:79,pos:"기장",name:"정호영",id:"P213008"},{no:80,pos:"기장",name:"정희중",id:"P213009"},
+  {no:81,pos:"기장",name:"조성식",id:"P203009"},{no:82,pos:"기장",name:"최봉근",id:"P243047"},{no:83,pos:"기장",name:"최상준",id:"P233026"},{no:84,pos:"기장",name:"한정권",id:"P213010"},
+  {no:85,pos:"부기장",name:"구상회",id:"P233027"},{no:86,pos:"부기장",name:"권기태",id:"P253011"},{no:87,pos:"부기장",name:"김나성",id:"P233038"},{no:88,pos:"부기장",name:"김동우B",id:"P900076"},{no:89,pos:"부기장",name:"김동욱",id:"P213012"},{no:90,pos:"부기장",name:"김동일",id:"P263014"},{no:91,pos:"부기장",name:"김병욱",id:"P223010"},{no:92,pos:"부기장",name:"김상연",id:"P243011"},{no:93,pos:"부기장",name:"김선우",id:"P263001"},{no:94,pos:"부기장",name:"김성훈",id:"P243023"},
+  {no:95,pos:"부기장",name:"김승재",id:"P223002"},{no:96,pos:"부기장",name:"김영걸",id:"P263002"},{no:97,pos:"부기장",name:"김영석",id:"P233039"},{no:98,pos:"부기장",name:"김영욱",id:"P803443"},{no:99,pos:"부기장",name:"김우창",id:"P253013"},{no:100,pos:"부기장",name:"김윤현",id:"P604105"},{no:101,pos:"부기장",name:"김정환",id:"P253014"},{no:102,pos:"부기장",name:"김지호",id:"P203013"},{no:103,pos:"부기장",name:"김창균",id:"P263003"},{no:104,pos:"부기장",name:"김태현",id:"P253002"},
+  {no:105,pos:"부기장",name:"김현수",id:"P243012"},{no:106,pos:"부기장",name:"김효승",id:"P223004"},{no:107,pos:"부기장",name:"나종찬",id:"P233040"},{no:108,pos:"부기장",name:"남성식",id:"P803303"},{no:109,pos:"부기장",name:"문종태",id:"P243013"},{no:110,pos:"부기장",name:"박성우",id:"P263004"},{no:111,pos:"부기장",name:"박성욱",id:"P243014"},{no:112,pos:"부기장",name:"박성진",id:"P243048"},{no:113,pos:"부기장",name:"박영욱",id:"P243015"},{no:114,pos:"부기장",name:"박의명",id:"P263005"},
+  {no:115,pos:"부기장",name:"박의충",id:"P253003"},{no:116,pos:"부기장",name:"박준회",id:"P233041"},{no:117,pos:"부기장",name:"박태을",id:"P233002"},{no:118,pos:"부기장",name:"배기현",id:"P233003"},{no:119,pos:"부기장",name:"배재욱",id:"P263006"},{no:120,pos:"부기장",name:"소병규",id:"P233042"},{no:121,pos:"부기장",name:"손창우",id:"P900102"},{no:122,pos:"부기장",name:"송승호",id:"P263015"},{no:123,pos:"부기장",name:"송호섭",id:"P263016"},{no:124,pos:"부기장",name:"신규철",id:"P263017"},
+  {no:125,pos:"부기장",name:"심효영",id:"P803852"},{no:126,pos:"부기장",name:"안상진",id:"P253015"},{no:127,pos:"부기장",name:"윤정훈",id:"P233043"},{no:128,pos:"부기장",name:"윤지열",id:"P243036"},{no:129,pos:"부기장",name:"이관호",id:"P233044"},{no:130,pos:"부기장",name:"이동건",id:"P253004"},{no:131,pos:"부기장",name:"이민재",id:"P253017"},{no:132,pos:"부기장",name:"이보행",id:"P253005"},{no:133,pos:"부기장",name:"이상규",id:"P243016"},{no:134,pos:"부기장",name:"이상호",id:"P203014"},
+  {no:135,pos:"부기장",name:"이승민",id:"P213013"},{no:136,pos:"부기장",name:"이은철",id:"P233005"},{no:137,pos:"부기장",name:"이장영",id:"P203020"},{no:138,pos:"부기장",name:"이재봉",id:"P253006"},{no:139,pos:"부기장",name:"이재일",id:"P243049"},{no:140,pos:"부기장",name:"이정곤",id:"P243017"},{no:141,pos:"부기장",name:"이정준",id:"P701851"},{no:142,pos:"부기장",name:"이정훈",id:"P203021"},{no:143,pos:"부기장",name:"이준오",id:"P233006"},{no:144,pos:"부기장",name:"이태호B",id:"P243050"},
+  {no:145,pos:"부기장",name:"이하정",id:"P233045"},{no:146,pos:"부기장",name:"이학현",id:"P243024"},{no:147,pos:"부기장",name:"이호석",id:"P233007"},{no:148,pos:"부기장",name:"임창훈",id:"P253007"},{no:149,pos:"부기장",name:"장명근",id:"P223011"},{no:150,pos:"부기장",name:"장서연",id:"P253018"},{no:151,pos:"부기장",name:"정범수",id:"P243051"},{no:152,pos:"부기장",name:"정상균",id:"P223012"},{no:153,pos:"부기장",name:"정성원",id:"P702816"},{no:154,pos:"부기장",name:"정인보",id:"P233046"},
+  {no:155,pos:"부기장",name:"정진규",id:"P233047"},{no:156,pos:"부기장",name:"정한솔",id:"P233048"},{no:157,pos:"부기장",name:"정현우",id:"P263018"},{no:158,pos:"부기장",name:"조병준",id:"P702330"},{no:159,pos:"부기장",name:"조석현",id:"P243025"},{no:160,pos:"부기장",name:"조성진",id:"P604002"},{no:161,pos:"부기장",name:"조준상",id:"P243018"},{no:162,pos:"부기장",name:"채상원",id:"P263007"},{no:163,pos:"부기장",name:"최경민",id:"P263019"},{no:164,pos:"부기장",name:"최동찬",id:"P243037"},
+  {no:165,pos:"부기장",name:"최성원",id:"P263020"},{no:166,pos:"부기장",name:"최우석",id:"P233010"},{no:167,pos:"항로기장",name:"최우진",id:"P223001"},{no:168,pos:"부기장",name:"최윤준",id:"P243038"},{no:169,pos:"부기장",name:"최재원",id:"P223003"},{no:170,pos:"부기장",name:"최정웅",id:"P243052"},{no:171,pos:"부기장",name:"한유경",id:"P263021"},{no:172,pos:"부기장",name:"한재훈",id:"P243026"},{no:173,pos:"부기장",name:"한현재",id:"P253019"},{no:174,pos:"부기장",name:"허노준",id:"P263008"},
+  {no:175,pos:"부기장",name:"허완",id:"P233049"},{no:176,pos:"부기장",name:"현경원",id:"P253020"},{no:177,pos:"부기장",name:"홍경수",id:"P253008"},{no:178,pos:"부기장",name:"홍인식",id:"P233032"},{no:179,pos:"부기장",name:"홍진영",id:"P223013"},{no:180,pos:"부기장",name:"황성민",id:"P243019"}
+];
+
+let records = [];
+let memberBase = [];
+let posFilter = '전체';
+let typeChartInst, yearChartInst, topChartInst;
+let unsubRecords = null;
+let unsubMembers = null;
+
+// ── Firebase 초기 데이터 시드 및 실시간 구독 ──────────────
+async function initFirebaseData() {
+  showLoading('Firebase 연결 중...');
+  try {
+    // 1) members 컬렉션이 비어있으면 초기 데이터 시드
+    const membersSnap = await getDocs(collection(db, 'members'));
+    if (membersSnap.empty) {
+      showLoading('초기 데이터 업로드 중...');
+      for (const m of INITIAL_MEMBERS) {
+        await setDoc(doc(db, 'members', m.id), m);
+      }
+    }
+
+    // 2) records 컬렉션이 비어있으면 초기 데이터 시드
+    const recordsSnap = await getDocs(collection(db, 'records'));
+    if (recordsSnap.empty) {
+      showLoading('이력 데이터 업로드 중...');
+      for (const r of INITIAL_RECORDS) {
+        await addDoc(collection(db, 'records'), r);
+      }
+    }
+
+    // 3) 실시간 구독 시작
+    startRealtimeSync();
+  } catch(e) {
+    hideLoading();
+    alert('Firebase 연결 오류: ' + e.message + '\n\nfirebaseConfig 값을 확인해주세요.');
+    console.error(e);
+  }
+}
+
+function startRealtimeSync() {
+  showLoading('실시간 동기화 시작...');
+
+  // members 실시간
+  unsubMembers = onSnapshot(collection(db, 'members'), snap => {
+    memberBase = snap.docs.map(d => d.data()).sort((a,b)=>a.no-b.no);
+    document.getElementById('name-list').innerHTML = memberBase.map(m=>`<option value="${m.name}">`).join('');
+    if (document.getElementById('page-members').classList.contains('active')) renderMembers();
+  });
+
+  // records 실시간
+  unsubRecords = onSnapshot(collection(db, 'records'), snap => {
+    records = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
+    hideLoading();
+    renderDashboard();
+    if (document.getElementById('page-members').classList.contains('active')) renderMembers();
+    if (document.getElementById('page-history').classList.contains('active'))  { updateYearFilter(); renderHistory(); }
+
+    // 실시간 동기화 인디케이터
+    showSyncBadge();
+  });
+}
+
+function showSyncBadge() {
+  let badge = document.getElementById('sync-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'sync-badge';
+    badge.style.cssText = 'position:fixed;bottom:18px;right:18px;background:rgba(76,175,125,.18);border:1px solid rgba(76,175,125,.35);color:#7dd4a8;font-size:11px;padding:5px 12px;border-radius:20px;z-index:500;font-family:"DM Mono",monospace;transition:opacity .5s';
+    document.body.appendChild(badge);
+  }
+  badge.textContent = '● 실시간 동기화됨';
+  badge.style.opacity = '1';
+  setTimeout(() => badge.style.opacity = '0', 2500);
+}
+
+function getScores() {
+  const s = {};
+  records.forEach(r => {
+    if (!s[r.name]) s[r.name] = {penalty:0, reward:0};
+    r.type === '벌점' ? s[r.name].penalty += r.score : s[r.name].reward += r.score;
+  });
+  return s;
+}
+
+function calcTotal(name) {
+  const s = getScores()[name];
+  return s ? 100 - s.penalty + s.reward : 100;
+}
+
+function scoreClass(t) {
+  if (t > 100) return 'score-great';
+  if (t === 100) return 'score-ok';
+  return 'score-warn';
+}
+
+function scoreColor(t) {
+  if (t > 100) return 'var(--blue-text)';
+  if (t === 100) return 'var(--green-text)';
+  return 'var(--amber-text)';
+}
+
+// --- Dashboard filters ---
+function getDashFiltered() {
+  const yf = document.getElementById('dash-year').value;
+  const pf = document.getElementById('dash-pos').value;
+  return records.filter(r => {
+    if (yf !== 'all' && String(r.year) !== yf) return false;
+    // match pos: records may have '-' for non-member entries; match memberBase pos when filtering
+    if (pf !== 'all') {
+      const m = memberBase.find(x=>x.name===r.name);
+      const rPos = m ? m.pos : r.pos;
+      if (rPos !== pf) return false;
+    }
+    return true;
+  });
+}
+
+function updateDashYearFilter() {
+  const years = [...new Set(records.map(r=>r.year))].sort();
+  const sel = document.getElementById('dash-year');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">전체 연도</option>' + years.map(y=>`<option value="${y}">${y}년</option>`).join('');
+  if ([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+// --- Dashboard ---
+function renderDashboard() {
+  updateDashYearFilter();
+  renderMetrics();
+  renderCharts();
+  renderRecent();
+}
+
+function renderMetrics() {
+  const filtered = getDashFiltered();
+  const totalPen = filtered.filter(r=>r.type==='벌점').reduce((a,r)=>a+r.score,0);
+  const totalRew = filtered.filter(r=>r.type==='상점').reduce((a,r)=>a+r.score,0);
+  const pf = document.getElementById('dash-pos').value;
+  const yf = document.getElementById('dash-year').value;
+  // warn count: always based on cumulative all-time scores, but filter by pos if set
+  const warnCount = memberBase.filter(m => {
+    if (pf !== 'all' && m.pos !== pf) return false;
+    return calcTotal(m.name) < 100;
+  }).length;
+  const labelSuffix = [yf !== 'all' ? yf+'년' : '', pf !== 'all' ? pf : ''].filter(Boolean).join(' · ') || '전체';
+  document.getElementById('metrics-row').innerHTML = `
+    <div class="metric"><div class="metric-label">벌점 누계</div><div class="metric-val red">${totalPen}</div><div class="metric-sub">${labelSuffix}</div></div>
+    <div class="metric"><div class="metric-label">상점 누계</div><div class="metric-val green">${totalRew}</div><div class="metric-sub">${labelSuffix}</div></div>
+    <div class="metric"><div class="metric-label">발생 건수</div><div class="metric-val amber">${filtered.length}</div><div class="metric-sub">${labelSuffix}</div></div>
+    <div class="metric"><div class="metric-label">주의 인원</div><div class="metric-val">${warnCount}</div><div class="metric-sub">명 · 100점 미만 (전체 누계)</div></div>
+  `;
+}
+
+function renderCharts() {
+  const filtered = getDashFiltered();
+  const totalPen = filtered.filter(r=>r.type==='벌점').reduce((a,r)=>a+r.score,0);
+  const totalRew = filtered.filter(r=>r.type==='상점').reduce((a,r)=>a+r.score,0);
+  if (typeChartInst) typeChartInst.destroy();
+  typeChartInst = new Chart(document.getElementById('typeChart'), {
+    type: 'doughnut',
+    data: {labels:['벌점','상점'],datasets:[{data:[totalPen,totalRew],backgroundColor:['#e05252','#4caf7d'],borderWidth:0,hoverOffset:4}]},
+    options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}
+  });
+  document.getElementById('type-legend').innerHTML = `
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#e05252"></span>벌점 ${totalPen}점</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#4caf7d"></span>상점 ${totalRew}점</span>
+  `;
+
+  // year trend chart — if year filter is set show monthly breakdown, else show yearly
+  const yf = document.getElementById('dash-year').value;
+  const pf = document.getElementById('dash-pos').value;
+  const titleEl = document.getElementById('year-chart-title');
+  if (yearChartInst) yearChartInst.destroy();
+  if (yf !== 'all') {
+    titleEl.textContent = yf + '년 월별 상벌점 현황';
+    // Monthly breakdown for selected year
+    const months = Array.from({length:12},(_,i)=>i+1);
+    const penByMonth = months.map(m=>records.filter(r=>{
+      if (r.year !== parseInt(yf) || r.type !== '벌점') return false;
+      if (pf !== 'all') { const mb=memberBase.find(x=>x.name===r.name); if ((mb?mb.pos:r.pos)!==pf) return false; }
+      return parseInt((r.date||'').split('-')[1]) === m;
+    }).reduce((a,r)=>a+r.score,0));
+    const rewByMonth = months.map(m=>records.filter(r=>{
+      if (r.year !== parseInt(yf) || r.type !== '상점') return false;
+      if (pf !== 'all') { const mb=memberBase.find(x=>x.name===r.name); if ((mb?mb.pos:r.pos)!==pf) return false; }
+      return parseInt((r.date||'').split('-')[1]) === m;
+    }).reduce((a,r)=>a+r.score,0));
+    yearChartInst = new Chart(document.getElementById('yearChart'), {
+      type: 'bar',
+      data: {
+        labels: months.map(m=>m+'월'),
+        datasets: [
+          {label:'벌점',data:penByMonth,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4},
+          {label:'상점',data:rewByMonth,backgroundColor:'rgba(76,175,125,0.5)',borderColor:'#4caf7d',borderWidth:1,borderRadius:4}
+        ]
+      },
+      options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b93a8',font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#555e75'},grid:{display:false}}}}
+    });
+  } else {
+    titleEl.textContent = pf !== 'all' ? pf + ' · 연도별 벌점 추이' : '연도별 직급별 벌점 추이';
+    // Yearly stacked by pos when pos=all, or simple when pos set
+    const years = [...new Set(records.map(r=>r.year))].sort();
+    const positions = ['기장','부기장','항로기장'];
+    const posColors = ['rgba(79,142,247,0.7)','rgba(224,82,82,0.7)','rgba(224,158,79,0.7)'];
+    if (pf === 'all') {
+      const datasets = positions.map((p,i) => ({
+        label: p,
+        data: years.map(y=>records.filter(r=>{
+          if (r.year!==y||r.type!=='벌점') return false;
+          const mb=memberBase.find(x=>x.name===r.name);
+          return (mb?mb.pos:r.pos)===p;
+        }).reduce((a,r)=>a+r.score,0)),
+        backgroundColor: posColors[i],
+        borderWidth:0,
+        borderRadius:3
+      }));
+      yearChartInst = new Chart(document.getElementById('yearChart'), {
+        type: 'bar',
+        data: {labels:years.map(String), datasets},
+        options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b93a8',font:{size:11}}}},scales:{y:{beginAtZero:true,stacked:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{stacked:true,ticks:{color:'#555e75'},grid:{display:false}}}}
+      });
+    } else {
+      const yearPen = years.map(y=>records.filter(r=>r.year===y&&r.type==='벌점'&&(()=>{const mb=memberBase.find(x=>x.name===r.name);return(mb?mb.pos:r.pos)===pf;})()).reduce((a,r)=>a+r.score,0));
+      yearChartInst = new Chart(document.getElementById('yearChart'), {
+        type: 'bar',
+        data: {labels:years.map(String),datasets:[{label:'벌점',data:yearPen,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4}]},
+        options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#555e75'},grid:{display:false}}}}
+      });
+    }
+  }
+
+  // Top penalty chart filtered
+  const scoreMap = {};
+  filtered.filter(r=>r.type==='벌점').forEach(r => {
+    scoreMap[r.name] = (scoreMap[r.name]||0) + r.score;
+  });
+  const top = Object.entries(scoreMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if (topChartInst) topChartInst.destroy();
+  topChartInst = new Chart(document.getElementById('topChart'), {
+    type: 'bar',
+    data: {labels:top.map(([n])=>n),datasets:[{label:'벌점',data:top.map(([,v])=>v),backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4}]},
+    options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#8b93a8'},grid:{display:false}}}}
+  });
+}
+
+function renderRecent() {
+  const filtered = getDashFiltered();
+  const sorted = [...filtered].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  document.getElementById('recent-body').innerHTML = sorted.length
+    ? sorted.map(r=>`
+    <tr>
+      <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
+      <td style="font-weight:500">${r.name}</td>
+      <td style="color:var(--text2)">${r.pos}</td>
+      <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
+      <td class="mono" style="font-weight:500">${r.score}점</td>
+      <td class="truncate" style="color:var(--text2);font-size:12px" title="${r.reason}">${r.reason}</td>
+    </tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">해당 조건의 이력이 없습니다</td></tr>';
+}
+
+// --- Members ---
+function filterPos(p, el) {
+  posFilter = p;
+  document.querySelectorAll('#pos-tabs .view-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderMembers();
+}
+
+function renderMembers() {
+  const q = (document.getElementById('member-search').value || '').toLowerCase();
+  const sf = document.getElementById('score-filter').value;
+  const scores = getScores();
+  const list = memberBase.filter(m => {
+    if (posFilter !== '전체' && m.pos !== posFilter) return false;
+    if (q && !m.name.includes(q) && !m.id.toLowerCase().includes(q)) return false;
+    const t = calcTotal(m.name);
+    if (sf === 'great' && t <= 100) return false;
+    if (sf === 'normal' && t !== 100) return false;
+    if (sf === 'warn' && t >= 100) return false;
+    return true;
+  });
+  const sc = getScores();
+  document.getElementById('member-body').innerHTML = list.map(m => {
+    const s = sc[m.name];
+    const pen = s ? s.penalty : 0;
+    const rew = s ? s.reward : 0;
+    const total = 100 - pen + rew;
+    return `<tr>
+      <td class="mono" style="color:var(--text3);font-size:12px">${m.no}</td>
+      <td style="color:var(--text2)">${m.pos}</td>
+      <td style="font-weight:500">${m.name}</td>
+      <td class="mono" style="color:var(--text3);font-size:12px">${m.id}</td>
+      <td>${pen > 0 ? `<span class="num-red">${pen}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+      <td>${rew > 0 ? `<span class="num-green">${rew}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+      <td><span class="score-pill ${scoreClass(total)}">${total}점</span></td>
+      <td><button class="btn btn-sm" onclick="openPersonModal('${m.name}','${m.pos}','${m.id}')">상세</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// --- History ---
+function updateYearFilter() {
+  const years = [...new Set(records.map(r=>r.year))].sort();
+  const sel = document.getElementById('hist-year');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">전체 연도</option>' + years.map(y=>`<option value="${y}">${y}년</option>`).join('');
+  sel.value = cur;
+}
+
+function renderHistory() {
+  const q = (document.getElementById('hist-search').value || '').toLowerCase();
+  const tf = document.getElementById('hist-type').value;
+  const yf = document.getElementById('hist-year').value;
+  const list = [...records].filter(r => {
+    if (q && !r.name.includes(q) && !r.reason.toLowerCase().includes(q)) return false;
+    if (tf !== 'all' && r.type !== tf) return false;
+    if (yf !== 'all' && String(r.year) !== yf) return false;
+    return true;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('hist-body').innerHTML = list.map(r => {
+    return `<tr>
+      <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
+      <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
+      <td style="font-weight:500">${r.name}</td>
+      <td style="color:var(--text2)">${r.pos}</td>
+      <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
+      <td class="mono" style="font-weight:500">${r.score}점</td>
+      <td class="truncate" style="color:var(--text2);font-size:12px" title="${r.reason}">${r.reason}</td>
+      <td><button class="btn btn-danger" onclick="deleteRecord('${r._id}')">삭제</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// --- Page switching ---
+function switchPage(name, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  if (name === 'members') renderMembers();
+  if (name === 'history') { updateYearFilter(); renderHistory(); }
+}
+
+// --- Modals ---
+function openAddModal() {
+  document.getElementById('add-modal').classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.getElementById('f-name').addEventListener('change', function() {
+  const m = memberBase.find(x=>x.name===this.value);
+  if (m) document.getElementById('f-pos').value = m.pos;
+});
+
+// Init UI date fields
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) + ' 기준';
+const _today = new Date();
+document.getElementById('f-date').value = _today.toISOString().split('T')[0];
+document.getElementById('f-year').value = _today.getFullYear();
+
+async function addRecord() {
+  const name = document.getElementById('f-name').value.trim();
+  const pos = document.getElementById('f-pos').value;
+  const type = document.getElementById('f-type').value;
+  const score = parseInt(document.getElementById('f-score').value) || 1;
+  const date = document.getElementById('f-date').value;
+  const year = parseInt(document.getElementById('f-year').value) || new Date().getFullYear();
+  const reason = document.getElementById('f-reason').value.trim();
+  if (!name || !date || !reason) { alert('이름, 일자, 안건을 모두 입력해주세요.'); return; }
+  showLoading('저장 중...');
+  try {
+    await addDoc(collection(db, 'records'), {year,date,name,pos,type,score,reason});
+    closeModal('add-modal');
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-reason').value = '';
+  } catch(e) {
+    hideLoading();
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+async function deleteRecord(docId) {
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  showLoading('삭제 중...');
+  try {
+    await deleteDoc(doc(db, 'records', docId));
+  } catch(e) {
+    hideLoading();
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function openPersonModal(name, pos, id) {
+  document.getElementById('pm-name').textContent = `${name}  ·  ${pos}  ·  ${id}`;
+  const s = getScores()[name];
+  const pen = s ? s.penalty : 0;
+  const rew = s ? s.reward : 0;
+  const total = 100 - pen + rew;
+  const el = document.getElementById('pm-total');
+  el.textContent = total + '점';
+  el.style.color = scoreColor(total);
+  document.getElementById('pm-penalty').textContent = pen + '점';
+  document.getElementById('pm-reward').textContent = rew + '점';
+  const hist = records.filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('pm-history').innerHTML = hist.length
+    ? hist.map(r=>`<tr>
+        <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
+        <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
+        <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
+        <td class="mono" style="font-weight:500">${r.score}점</td>
+        <td style="color:var(--text2);font-size:12px">${r.reason}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">이력 없음</td></tr>';
+  document.getElementById('person-modal').classList.add('open');
+}
+
+document.getElementById('add-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('add-modal'); });
+document.getElementById('person-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('person-modal'); });
+document.getElementById('new-member-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('new-member-modal'); });
+
+function openNewMemberModal() {
+  // 기본값 세팅
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('nm-date').value = today;
+  document.getElementById('nm-name').value = '';
+  document.getElementById('nm-id').value = '';
+  document.getElementById('nm-note').value = '';
+  document.getElementById('nm-error').textContent = '';
+  document.getElementById('new-member-modal').classList.add('open');
+}
+
+async function addNewMember() {
+  const name = document.getElementById('nm-name').value.trim();
+  const id   = document.getElementById('nm-id').value.trim();
+  const pos  = document.getElementById('nm-pos').value;
+  const date = document.getElementById('nm-date').value;
+  const note = document.getElementById('nm-note').value.trim();
+  const errEl = document.getElementById('nm-error');
+
+  if (!name || !id || !date) {
+    errEl.textContent = '이름, 사번, 입사일은 필수 항목입니다.';
+    return;
+  }
+  if (memberBase.find(m => m.name === name)) {
+    errEl.textContent = `이미 등록된 이름입니다: ${name}`;
+    return;
+  }
+  if (memberBase.find(m => m.id === id)) {
+    errEl.textContent = `이미 사용 중인 사번입니다: ${id}`;
+    return;
+  }
+
+  const nextNo = memberBase.reduce((mx, m) => Math.max(mx, m.no), 0) + 1;
+  showLoading('직원 등록 중...');
+  try {
+    await setDoc(doc(db, 'members', id), { no: nextNo, pos, name, id });
+    closeModal('new-member-modal');
+    const membersNav = document.querySelector('.nav-item:nth-child(2)');
+    switchPage('members', membersNav);
+    document.getElementById('member-search').value = name;
+    renderMembers();
+    alert(`✓ ${name} (${pos} · ${id}) 이/가 등록되었습니다.\n기본 점수: 100점`);
+  } catch(e) {
+    hideLoading();
+    alert('등록 실패: ' + e.message);
+  }
+}
+
+// renderDashboard() is called after Firebase realtime sync
+</script>
+</body>
+</html>
