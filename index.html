@@ -510,7 +510,7 @@
           </div>
         </div>
         <table>
-          <thead><tr><th>순번</th><th>직위</th><th>이름</th><th>사번</th><th>벌점</th><th>상점</th><th>총점</th><th>상세</th></tr></thead>
+          <thead><tr><th>순번</th><th>직위</th><th>이름</th><th>사번</th><th>벌점</th><th>상점</th><th>총점</th><th>상세</th><th>관리</th></tr></thead>
           <tbody id="member-body"></tbody>
         </table>
       </div>
@@ -537,7 +537,7 @@
           </div>
         </div>
         <table>
-          <thead><tr><th>연도</th><th>날짜</th><th>이름</th><th>직위</th><th>유형</th><th>점수</th><th>안건</th><th>액션</th></tr></thead>
+          <thead><tr><th>연도</th><th>날짜</th><th>이름</th><th>직위</th><th>유형</th><th>점수</th><th>안건</th><th>수정</th></tr></thead>
           <tbody id="hist-body"></tbody>
         </table>
       </div>
@@ -959,7 +959,6 @@ function filterPos(p, el) {
 function renderMembers() {
   const q = (document.getElementById('member-search').value || '').toLowerCase();
   const sf = document.getElementById('score-filter').value;
-  const scores = getScores();
   const list = memberBase.filter(m => {
     if (posFilter !== '전체' && m.pos !== posFilter) return false;
     if (q && !m.name.includes(q) && !m.id.toLowerCase().includes(q)) return false;
@@ -975,6 +974,7 @@ function renderMembers() {
     const pen = s ? s.penalty : 0;
     const rew = s ? s.reward : 0;
     const total = 100 - pen + rew;
+    const mi = memberBase.indexOf(m);
     return `<tr>
       <td class="mono" style="color:var(--text3);font-size:12px">${m.no}</td>
       <td style="color:var(--text2)">${m.pos}</td>
@@ -984,6 +984,7 @@ function renderMembers() {
       <td>${rew > 0 ? `<span class="num-green">${rew}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
       <td><span class="score-pill ${scoreClass(total)}">${total}점</span></td>
       <td><button class="btn btn-sm" onclick="openPersonModal('${m.name}','${m.pos}','${m.id}')">상세</button></td>
+      <td><button class="btn btn-danger" onclick="deleteMember(${mi},'${m.name}')">삭제</button></td>
     </tr>`;
   }).join('');
 }
@@ -1007,22 +1008,21 @@ function renderHistory() {
     if (yf !== 'all' && String(r.year) !== yf) return false;
     return true;
   }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById('hist-body').innerHTML = list.map(r => {
-    const idx = records.indexOf(r);
-    return `<tr>
-      <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
-      <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
-      <td style="font-weight:500">${r.name}</td>
-      <td style="color:var(--text2)">${r.pos}</td>
-      <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
-      <td class="mono" style="font-weight:500">${r.score}점</td>
-      <td class="truncate" style="color:var(--text2);font-size:12px" title="${r.reason}">${r.reason}</td>
-      <td style="display:flex;gap:6px">
-        <button class="btn btn-sm" onclick="openEditModal(${idx})" title="수정">✏️</button>
-        <button class="btn btn-danger" onclick="deleteRecord(${idx})" title="삭제">삭제</button>
-      </td>
-    </tr>`;
-  }).join('');
+  document.getElementById('hist-body').innerHTML = list.length
+    ? list.map(r => {
+        const idx = records.indexOf(r);
+        return `<tr>
+          <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
+          <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
+          <td style="font-weight:500">${r.name}</td>
+          <td style="color:var(--text2)">${r.pos}</td>
+          <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
+          <td class="mono" style="font-weight:500">${r.score}점</td>
+          <td class="truncate" style="color:var(--text2);font-size:12px" title="${r.reason}">${r.reason}</td>
+          <td><button class="btn btn-sm" onclick="openEditModal(${idx})">✏️ 수정</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">해당 조건의 이력이 없습니다</td></tr>';
 }
 
 // --- Edit record ---
@@ -1098,21 +1098,19 @@ function addRecord() {
   renderDashboard();
 }
 
-function deleteRecord(idx) {
-  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
-  records.splice(idx, 1);
+// --- Delete member (승무원 삭제) ---
+function deleteMember(idx, name) {
+  if (!confirm(`${name} 승무원을 명부에서 삭제하시겠습니까?\n(해당 승무원의 이력도 함께 삭제됩니다)`)) return;
+  memberBase.splice(idx, 1);
+  // renumber
+  memberBase.forEach((m, i) => m.no = i + 1);
+  // remove associated records
+  for (let i = records.length - 1; i >= 0; i--) {
+    if (records[i].name === name) records.splice(i, 1);
+  }
   renderDashboard();
+  renderMembers();
   renderHistory();
-  renderMembers();
-}
-
-function deleteFromPerson(idx, name, pos, id) {
-  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
-  records.splice(idx, 1);
-  renderDashboard();
-  renderMembers();
-  // refresh person modal in place
-  openPersonModal(name, pos, id);
 }
 
 function openPersonModal(name, pos, id) {
@@ -1136,10 +1134,7 @@ function openPersonModal(name, pos, id) {
           <td><span class="badge ${r.type==='벌점'?'badge-penalty':'badge-reward'}">${r.type}</span></td>
           <td class="mono" style="font-weight:500">${r.score}점</td>
           <td style="color:var(--text2);font-size:12px">${r.reason}</td>
-          <td style="display:flex;gap:5px;white-space:nowrap">
-            <button class="btn btn-sm" onclick="closeModal('person-modal');openEditModal(${idx})" title="수정">✏️</button>
-            <button class="btn btn-danger" onclick="deleteFromPerson(${idx},'${name}','${pos}','${id}')" title="삭제">삭제</button>
-          </td>
+          <td><button class="btn btn-sm" onclick="closeModal('person-modal');openEditModal(${idx})">✏️ 수정</button></td>
         </tr>`;
       }).join('')
     : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">이력 없음</td></tr>';
