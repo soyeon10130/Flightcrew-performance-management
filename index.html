@@ -29,6 +29,9 @@
     --amber-text: #f0c080;
     --blue-bg: rgba(79,142,247,0.12);
     --blue-text: #90b8fa;
+    --purple: #9b72f7;
+    --purple-bg: rgba(155,114,247,0.12);
+    --purple-text: #c4a8fb;
     --radius: 10px;
     --radius-lg: 14px;
   }
@@ -44,10 +47,8 @@
     min-height: 100vh;
   }
 
-  /* Layout */
   .shell { display: flex; height: 100vh; overflow: hidden; }
 
-  /* Sidebar */
   .sidebar {
     width: 220px;
     flex-shrink: 0;
@@ -84,6 +85,9 @@
     margin-top: auto;
     padding: 16px 20px;
     border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
   .add-btn {
     width: 100%;
@@ -97,15 +101,26 @@
     cursor: pointer;
     font-family: 'Noto Sans KR', sans-serif;
     transition: background .15s;
+    text-align: center;
   }
   .add-btn:hover { background: var(--accent2); }
-
-  /* Main */
-  .main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 28px 32px;
+  .add-btn-secondary {
+    width: 100%;
+    padding: 9px 14px;
+    background: var(--purple-bg);
+    color: var(--purple-text);
+    border: 1px solid rgba(155,114,247,0.25);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all .15s;
+    text-align: center;
   }
+  .add-btn-secondary:hover { background: rgba(155,114,247,0.22); border-color: rgba(155,114,247,0.4); }
+
+  .main { flex: 1; overflow-y: auto; padding: 28px 32px; }
 
   .page-header {
     display: flex;
@@ -116,7 +131,6 @@
   .page-title { font-size: 20px; font-weight: 700; }
   .page-date { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
 
-  /* Metric cards */
   .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
   .metric {
     background: var(--bg2);
@@ -131,7 +145,6 @@
   .metric-val.amber { color: var(--amber); }
   .metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
 
-  /* Charts row */
   .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
   .chart-card {
     background: var(--bg2);
@@ -142,7 +155,6 @@
   .chart-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
   .chart-area { position: relative; }
 
-  /* Table */
   .table-card {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -199,7 +211,6 @@
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: var(--bg3); }
 
-  /* Badges & pills */
   .badge {
     display: inline-block;
     padding: 2px 8px;
@@ -209,6 +220,7 @@
   }
   .badge-penalty { background: var(--red-bg); color: var(--red-text); }
   .badge-reward { background: var(--green-bg); color: var(--green-text); }
+  .badge-new { background: var(--purple-bg); color: var(--purple-text); font-size: 10px; padding: 1px 6px; margin-left: 4px; }
 
   .score-pill {
     display: inline-block;
@@ -222,7 +234,6 @@
   .score-ok { background: var(--green-bg); color: var(--green-text); }
   .score-warn { background: var(--amber-bg); color: var(--amber-text); }
 
-  /* View tabs */
   .view-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
   .view-tab {
     padding: 6px 14px;
@@ -236,17 +247,11 @@
   .view-tab:hover { background: var(--bg3); color: var(--text); }
   .view-tab.active { background: var(--bg3); color: var(--accent); border-color: var(--border2); font-weight: 500; }
 
-  /* Legend */
-  .legend-strip {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
+  .legend-strip { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-  /* Modal overlay */
+  /* Modal */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -268,11 +273,13 @@
     max-height: 90vh;
     overflow-y: auto;
   }
-  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .modal-subtitle { font-size: 12px; color: var(--text3); margin-bottom: 20px; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .form-group { margin-bottom: 0; }
   .form-group.full { grid-column: 1 / -1; }
   .form-label { display: block; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .form-label .required { color: var(--red-text); margin-left: 2px; }
   .form-input, .form-select, .form-textarea {
     width: 100%;
     background: var(--bg3);
@@ -294,10 +301,43 @@
   .btn-ghost:hover { background: var(--bg3); color: var(--text); }
   .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary:hover { background: var(--accent2); }
+  .btn-purple { background: var(--purple-bg); color: var(--purple-text); border-color: rgba(155,114,247,0.3); }
+  .btn-purple:hover { background: rgba(155,114,247,0.22); }
   .btn-danger { background: var(--red-bg); color: var(--red-text); border-color: transparent; font-size: 12px; padding: 4px 10px; }
   .btn-danger:hover { background: rgba(224,82,82,0.22); }
   .btn-sm { padding: 4px 10px; font-size: 12px; background: var(--bg3); color: var(--text2); border-color: var(--border); }
   .btn-sm:hover { color: var(--text); border-color: var(--border2); }
+
+  /* New member modal highlight */
+  .modal-new-member { border-color: rgba(155,114,247,0.3); }
+  .modal-new-member .modal-title { color: var(--purple-text); }
+
+  /* Form divider */
+  .form-divider {
+    grid-column: 1 / -1;
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+  }
+  .form-section-label {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: -4px;
+  }
+
+  /* ID preview badge */
+  .id-preview {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    min-height: 16px;
+    transition: color .2s;
+  }
+  .id-preview.ready { color: var(--purple-text); }
 
   /* Person modal */
   .person-modal {
@@ -320,21 +360,36 @@
   .person-stat-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
   .person-stat-val { font-size: 28px; font-weight: 700; font-family: 'DM Mono', monospace; }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
 
-  /* Page hidden */
   .page { display: none; }
   .page.active { display: block; }
 
-  /* Responsive text truncate */
   .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
   .mono { font-family: 'DM Mono', monospace; }
-
   .num-red { color: var(--red-text); font-weight: 500; font-family: 'DM Mono', monospace; }
   .num-green { color: var(--green-text); font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .25s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(155,114,247,0.4); color: var(--purple-text); }
 
   /* Lock screen */
   #lock-screen {
@@ -373,19 +428,19 @@
     transition: background .15s;
   }
   .lock-btn:hover { background: var(--accent2); }
-  .lock-error {
-    font-size: 12px; color: var(--red-text);
-    margin-top: 10px; height: 16px; transition: opacity .2s;
-  }
-  .lock-dots {
-    display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
-  }
-  .lock-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--bg3); border: 1px solid var(--border2);
-    transition: background .15s;
-  }
+  .lock-error { font-size: 12px; color: var(--red-text); margin-top: 10px; height: 16px; }
+  .lock-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+  .lock-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bg3); border: 1px solid var(--border2); transition: background .15s; }
   .lock-dot.filled { background: var(--accent); border-color: var(--accent); }
+
+  /* Member count badge in header */
+  .count-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    background: var(--bg3); color: var(--text3);
+    margin-left: 8px; vertical-align: middle;
+  }
 </style>
 </head>
 <body>
@@ -408,8 +463,9 @@
   </div>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <div class="shell" id="main-shell" style="display:none">
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="ko">상벌점 관리</div>
@@ -427,11 +483,11 @@
       </div>
     </nav>
     <div class="sidebar-bottom">
-      <button class="add-btn" onclick="openAddModal()">+ 새 기록 추가</button>
+      <button class="add-btn" onclick="openAddModal()">+ 상벌점 기록 추가</button>
+      <button class="add-btn-secondary" onclick="openNewMemberModal()">+ 신규 승무원 등록</button>
     </div>
   </aside>
 
-  <!-- Main content -->
   <main class="main">
 
     <!-- DASHBOARD -->
@@ -462,17 +518,17 @@
       <div class="charts-row">
         <div class="chart-card">
           <div class="chart-title">유형별 현황</div>
-          <div class="chart-area" style="height:180px"><canvas id="typeChart" role="img" aria-label="유형별 상벌점 현황"></canvas></div>
+          <div class="chart-area" style="height:180px"><canvas id="typeChart"></canvas></div>
           <div id="type-legend" style="display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--text2)"></div>
         </div>
         <div class="chart-card">
           <div class="chart-title" id="year-chart-title">연도별 벌점 추이</div>
-          <div class="chart-area" style="height:180px"><canvas id="yearChart" role="img" aria-label="연도별 벌점 추이"></canvas></div>
+          <div class="chart-area" style="height:180px"><canvas id="yearChart"></canvas></div>
         </div>
       </div>
       <div class="chart-card" style="margin-bottom:20px">
         <div class="chart-title">벌점 상위 인원</div>
-        <div class="chart-area" style="height:200px"><canvas id="topChart" role="img" aria-label="벌점 상위 인원"></canvas></div>
+        <div class="chart-area" style="height:200px"><canvas id="topChart"></canvas></div>
       </div>
       <div class="table-card">
         <div class="table-header">
@@ -488,7 +544,10 @@
     <!-- MEMBERS -->
     <div id="page-members" class="page">
       <div class="page-header">
-        <div class="page-title">승무원 명부</div>
+        <div>
+          <div class="page-title">승무원 명부 <span class="count-badge" id="member-count-badge">0명</span></div>
+        </div>
+        <button class="btn btn-purple" onclick="openNewMemberModal()" style="font-size:12px;padding:7px 14px">+ 신규 승무원 등록</button>
       </div>
       <div class="view-tabs" id="pos-tabs">
         <div class="view-tab active" onclick="filterPos('전체',this)">전체</div>
@@ -510,7 +569,7 @@
           </div>
         </div>
         <table>
-          <thead><tr><th>순번</th><th>직위</th><th>이름</th><th>사번</th><th>벌점</th><th>상점</th><th>총점</th><th>상세</th><th>관리</th></tr></thead>
+          <thead><tr><th>순번</th><th>직위</th><th>이름</th><th>사번</th><th>입사연도</th><th>비고</th><th>벌점</th><th>상점</th><th>총점</th><th>상세</th><th>관리</th></tr></thead>
           <tbody id="member-body"></tbody>
         </table>
       </div>
@@ -546,13 +605,14 @@
   </main>
 </div>
 
-<!-- Add modal -->
+<!-- Add Record Modal -->
 <div class="modal-overlay" id="add-modal">
   <div class="modal">
     <div class="modal-title">상벌점 기록 추가</div>
+    <div class="modal-subtitle">기존 승무원의 상벌점 이력을 추가합니다</div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">이름 *</label>
+        <label class="form-label">이름 <span class="required">*</span></label>
         <input class="form-input" type="text" id="f-name" list="name-list" placeholder="이름 입력">
         <datalist id="name-list"></datalist>
       </div>
@@ -566,18 +626,18 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">유형 *</label>
+        <label class="form-label">유형 <span class="required">*</span></label>
         <select class="form-select" id="f-type">
           <option value="벌점">벌점</option>
           <option value="상점">상점</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">점수 *</label>
+        <label class="form-label">점수 <span class="required">*</span></label>
         <input class="form-input" type="number" id="f-score" min="1" max="10" value="1">
       </div>
       <div class="form-group">
-        <label class="form-label">부여 일자 *</label>
+        <label class="form-label">부여 일자 <span class="required">*</span></label>
         <input class="form-input" type="date" id="f-date">
       </div>
       <div class="form-group">
@@ -585,13 +645,68 @@
         <input class="form-input" type="number" id="f-year" min="2020" max="2030">
       </div>
       <div class="form-group full">
-        <label class="form-label">상정 안건 *</label>
+        <label class="form-label">상정 안건 <span class="required">*</span></label>
         <textarea class="form-textarea" id="f-reason" placeholder="안건 내용을 입력하세요"></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('add-modal')">취소</button>
       <button class="btn btn-primary" onclick="addRecord()">추가하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Member Modal -->
+<div class="modal-overlay" id="new-member-modal">
+  <div class="modal modal-new-member">
+    <div class="modal-title">✦ 신규 승무원 등록</div>
+    <div class="modal-subtitle">신규 승무원을 명부에 추가합니다</div>
+    <div class="form-grid">
+
+      <div class="form-section-label">기본 정보</div>
+
+      <div class="form-group">
+        <label class="form-label">이름 <span class="required">*</span></label>
+        <input class="form-input" type="text" id="nm-name" placeholder="홍길동" oninput="updateIdPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">직위 <span class="required">*</span></label>
+        <select class="form-select" id="nm-pos" onchange="updateIdPreview()">
+          <option value="기장">기장</option>
+          <option value="부기장">부기장</option>
+          <option value="항로기장">항로기장</option>
+          <option value="-">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">사번 <span class="required">*</span></label>
+        <input class="form-input" type="text" id="nm-id" placeholder="예: P263022" oninput="updateIdPreview()" style="font-family:'DM Mono',monospace;letter-spacing:.04em">
+        <div class="id-preview" id="id-preview">사번을 입력하거나 자동생성 버튼을 누르세요</div>
+      </div>
+      <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
+        <label class="form-label">사번 자동생성</label>
+        <button class="btn btn-purple" style="width:100%;padding:8px 12px;font-size:12px" onclick="autoGenId()">⚙ 자동생성</button>
+      </div>
+
+      <hr class="form-divider">
+      <div class="form-section-label">부가 정보</div>
+
+      <div class="form-group">
+        <label class="form-label">입사연도</label>
+        <input class="form-input" type="number" id="nm-year" placeholder="2025" min="2000" max="2030">
+      </div>
+      <div class="form-group">
+        <label class="form-label">비고</label>
+        <input class="form-input" type="text" id="nm-note" placeholder="신규, 전입, 복직 등">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">추가 메모</label>
+        <textarea class="form-textarea" id="nm-memo" placeholder="기타 참고사항을 입력하세요 (선택)" style="height:60px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-member-modal')">취소</button>
+      <button class="btn btn-purple" onclick="addNewMember()">등록하기</button>
     </div>
   </div>
 </div>
@@ -675,14 +790,12 @@
 </div>
 
 <script>
-// ── Password lock ──────────────────────────────────────────
-const CORRECT_PW = '7894'; // ← 비밀번호 여기서 변경하세요
+// ── Password lock ──
+const CORRECT_PW = '7894';
 
 function onPwInput(el) {
   const v = el.value;
-  for (let i = 0; i < 4; i++) {
-    document.getElementById('d' + i).classList.toggle('filled', i < v.length);
-  }
+  for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.toggle('filled', i < v.length);
   document.getElementById('lock-error').textContent = '';
   if (v.length === 4) setTimeout(tryUnlock, 120);
 }
@@ -691,25 +804,22 @@ function tryUnlock() {
   const val = document.getElementById('lock-input').value;
   if (val === CORRECT_PW) {
     const ls = document.getElementById('lock-screen');
-    ls.style.transition = 'opacity .3s';
-    ls.style.opacity = '0';
+    ls.style.transition = 'opacity .3s'; ls.style.opacity = '0';
     setTimeout(() => {
       ls.style.display = 'none';
       document.getElementById('main-shell').style.display = 'flex';
       renderDashboard();
     }, 300);
   } else {
-    const errEl = document.getElementById('lock-error');
-    errEl.textContent = '비밀번호가 올바르지 않습니다';
+    document.getElementById('lock-error').textContent = '비밀번호가 올바르지 않습니다';
     document.getElementById('lock-input').value = '';
-    for (let i = 0; i < 4; i++) document.getElementById('d' + i).classList.remove('filled');
+    for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.remove('filled');
     document.getElementById('lock-input').focus();
   }
 }
-
 document.getElementById('lock-input').focus();
-// ──────────────────────────────────────────────────────────
 
+// ── Data ──
 const rawData = [
   {year:2023,date:"2023-09-20",name:"김효승",pos:"부기장",type:"벌점",score:1,reason:"9/20일 YP101 Late Show up으로 인한 상벌협의회 회부"},
   {year:2024,date:"2024-02-14",name:"이장영",pos:"부기장",type:"벌점",score:3,reason:"MISSED FLIGHT 로 인한 근무 규정 미준수"},
@@ -730,25 +840,25 @@ const rawData = [
 ];
 
 const memberBase = [
-  {no:1,pos:"기장",name:"강달용",id:"P213011"},{no:2,pos:"기장",name:"강상진",id:"P243039"},{no:3,pos:"기장",name:"강성준",id:"P243002"},{no:4,pos:"기장",name:"강호준",id:"P243027"},{no:5,pos:"기장",name:"강흥건",id:"P233011"},{no:6,pos:"기장",name:"경진수",id:"P203008"},{no:7,pos:"기장",name:"고희덕",id:"P213001"},{no:8,pos:"기장",name:"김경석",id:"P223006"},{no:9,pos:"기장",name:"김경수",id:"P223005"},{no:10,pos:"기장",name:"김길주",id:"P243040"},
-  {no:11,pos:"기장",name:"김남호",id:"P243041"},{no:12,pos:"기장",name:"김동섭",id:"P203018"},{no:13,pos:"기장",name:"김동환",id:"P213002"},{no:14,pos:"기장",name:"김선용",id:"P233033"},{no:15,pos:"기장",name:"김세훈",id:"P243003"},{no:16,pos:"기장",name:"김영길",id:"P243004"},{no:17,pos:"기장",name:"김영준",id:"P233012"},{no:18,pos:"기장",name:"김영필",id:"P203006"},{no:19,pos:"기장",name:"김용식",id:"P233034"},{no:20,pos:"기장",name:"김은수",id:"P203015"},
-  {no:21,pos:"기장",name:"김일관",id:"P243005"},{no:22,pos:"기장",name:"김지웅",id:"P203012"},{no:23,pos:"기장",name:"김진환",id:"P203022"},{no:24,pos:"기장",name:"김치윤",id:"P243006"},{no:25,pos:"기장",name:"김홍진",id:"P233013"},{no:26,pos:"기장",name:"김훈A",id:"P213003"},{no:27,pos:"기장",name:"김훈B",id:"P243007"},{no:28,pos:"기장",name:"나종석",id:"P243042"},{no:29,pos:"기장",name:"남궁명",id:"P233014"},{no:30,pos:"기장",name:"노영호",id:"P243028"},
-  {no:31,pos:"기장",name:"박규태",id:"P213004"},{no:32,pos:"기장",name:"박병열",id:"P233016"},{no:33,pos:"기장",name:"박양주",id:"P243029"},{no:34,pos:"기장",name:"박일호",id:"P213014"},{no:35,pos:"기장",name:"박준성",id:"P233017"},{no:36,pos:"기장",name:"박형근",id:"P213005"},{no:37,pos:"기장",name:"배총태",id:"P203007"},{no:38,pos:"기장",name:"서동철",id:"P233018"},{no:39,pos:"기장",name:"서호균",id:"P203019"},{no:40,pos:"기장",name:"송다비라",id:"P243030"},
-  {no:41,pos:"기장",name:"송우익",id:"P243031"},{no:42,pos:"기장",name:"신경호",id:"P233019"},{no:43,pos:"기장",name:"신동훈",id:"P193002"},{no:44,pos:"기장",name:"신민철",id:"P233020"},{no:45,pos:"기장",name:"신지수",id:"P203004"},{no:46,pos:"기장",name:"연정호",id:"P243043"},{no:47,pos:"기장",name:"위충석",id:"P203001"},{no:48,pos:"기장",name:"유민상",id:"P223007"},{no:49,pos:"기장",name:"유우룡",id:"P203005"},{no:50,pos:"기장",name:"윤세기",id:"P243008"},
-  {no:51,pos:"기장",name:"윤완석",id:"P243020"},{no:52,pos:"기장",name:"윤태선",id:"P223008"},{no:53,pos:"기장",name:"이동수",id:"P213006"},{no:54,pos:"기장",name:"이병문",id:"P243032"},{no:55,pos:"기장",name:"이병욱",id:"P203010"},{no:56,pos:"기장",name:"이석원",id:"P233022"},{no:57,pos:"기장",name:"이세찬",id:"P243044"},{no:58,pos:"기장",name:"이승현",id:"P233035"},{no:59,pos:"기장",name:"이은상",id:"P193001"},{no:60,pos:"기장",name:"이장헌",id:"P233023"},
-  {no:61,pos:"기장",name:"이재현",id:"P233036"},{no:62,pos:"기장",name:"이재형",id:"P243045"},{no:63,pos:"기장",name:"이중엽",id:"P203002"},{no:64,pos:"기장",name:"이창훈",id:"P243009"},{no:65,pos:"기장",name:"이태권",id:"P243021"},{no:66,pos:"기장",name:"이혁제",id:"P243010"},{no:67,pos:"기장",name:"임동헌",id:"P243033"},{no:68,pos:"기장",name:"임승곤",id:"P243034"},{no:69,pos:"기장",name:"임원길",id:"P190001"},{no:70,pos:"기장",name:"임준호",id:"P233037"},
-  {no:71,pos:"기장",name:"장재원",id:"P243046"},{no:72,pos:"기장",name:"전승호",id:"P233024"},{no:73,pos:"기장",name:"전우태",id:"P243035"},{no:74,pos:"기장",name:"전지혁",id:"P203011"},{no:75,pos:"기장",name:"정권철",id:"P223009"},{no:76,pos:"기장",name:"정남석",id:"P243022"},{no:77,pos:"기장",name:"정재훈",id:"P213007"},{no:78,pos:"기장",name:"정진수",id:"P233025"},{no:79,pos:"기장",name:"정호영",id:"P213008"},{no:80,pos:"기장",name:"정희중",id:"P213009"},
-  {no:81,pos:"기장",name:"조성식",id:"P203009"},{no:82,pos:"기장",name:"최봉근",id:"P243047"},{no:83,pos:"기장",name:"최상준",id:"P233026"},{no:84,pos:"기장",name:"한정권",id:"P213010"},
-  {no:85,pos:"부기장",name:"구상회",id:"P233027"},{no:86,pos:"부기장",name:"권기태",id:"P253011"},{no:87,pos:"부기장",name:"김나성",id:"P233038"},{no:88,pos:"부기장",name:"김동우B",id:"P900076"},{no:89,pos:"부기장",name:"김동욱",id:"P213012"},{no:90,pos:"부기장",name:"김동일",id:"P263014"},{no:91,pos:"부기장",name:"김병욱",id:"P223010"},{no:92,pos:"부기장",name:"김상연",id:"P243011"},{no:93,pos:"부기장",name:"김선우",id:"P263001"},{no:94,pos:"부기장",name:"김성훈",id:"P243023"},
-  {no:95,pos:"부기장",name:"김승재",id:"P223002"},{no:96,pos:"부기장",name:"김영걸",id:"P263002"},{no:97,pos:"부기장",name:"김영석",id:"P233039"},{no:98,pos:"부기장",name:"김영욱",id:"P803443"},{no:99,pos:"부기장",name:"김우창",id:"P253013"},{no:100,pos:"부기장",name:"김윤현",id:"P604105"},{no:101,pos:"부기장",name:"김정환",id:"P253014"},{no:102,pos:"부기장",name:"김지호",id:"P203013"},{no:103,pos:"부기장",name:"김창균",id:"P263003"},{no:104,pos:"부기장",name:"김태현",id:"P253002"},
-  {no:105,pos:"부기장",name:"김현수",id:"P243012"},{no:106,pos:"부기장",name:"김효승",id:"P223004"},{no:107,pos:"부기장",name:"나종찬",id:"P233040"},{no:108,pos:"부기장",name:"남성식",id:"P803303"},{no:109,pos:"부기장",name:"문종태",id:"P243013"},{no:110,pos:"부기장",name:"박성우",id:"P263004"},{no:111,pos:"부기장",name:"박성욱",id:"P243014"},{no:112,pos:"부기장",name:"박성진",id:"P243048"},{no:113,pos:"부기장",name:"박영욱",id:"P243015"},{no:114,pos:"부기장",name:"박의명",id:"P263005"},
-  {no:115,pos:"부기장",name:"박의충",id:"P253003"},{no:116,pos:"부기장",name:"박준회",id:"P233041"},{no:117,pos:"부기장",name:"박태을",id:"P233002"},{no:118,pos:"부기장",name:"배기현",id:"P233003"},{no:119,pos:"부기장",name:"배재욱",id:"P263006"},{no:120,pos:"부기장",name:"소병규",id:"P233042"},{no:121,pos:"부기장",name:"손창우",id:"P900102"},{no:122,pos:"부기장",name:"송승호",id:"P263015"},{no:123,pos:"부기장",name:"송호섭",id:"P263016"},{no:124,pos:"부기장",name:"신규철",id:"P263017"},
-  {no:125,pos:"부기장",name:"심효영",id:"P803852"},{no:126,pos:"부기장",name:"안상진",id:"P253015"},{no:127,pos:"부기장",name:"윤정훈",id:"P233043"},{no:128,pos:"부기장",name:"윤지열",id:"P243036"},{no:129,pos:"부기장",name:"이관호",id:"P233044"},{no:130,pos:"부기장",name:"이동건",id:"P253004"},{no:131,pos:"부기장",name:"이민재",id:"P253017"},{no:132,pos:"부기장",name:"이보행",id:"P253005"},{no:133,pos:"부기장",name:"이상규",id:"P243016"},{no:134,pos:"부기장",name:"이상호",id:"P203014"},
-  {no:135,pos:"부기장",name:"이승민",id:"P213013"},{no:136,pos:"부기장",name:"이은철",id:"P233005"},{no:137,pos:"부기장",name:"이장영",id:"P203020"},{no:138,pos:"부기장",name:"이재봉",id:"P253006"},{no:139,pos:"부기장",name:"이재일",id:"P243049"},{no:140,pos:"부기장",name:"이정곤",id:"P243017"},{no:141,pos:"부기장",name:"이정준",id:"P701851"},{no:142,pos:"부기장",name:"이정훈",id:"P203021"},{no:143,pos:"부기장",name:"이준오",id:"P233006"},{no:144,pos:"부기장",name:"이태호B",id:"P243050"},
-  {no:145,pos:"부기장",name:"이하정",id:"P233045"},{no:146,pos:"부기장",name:"이학현",id:"P243024"},{no:147,pos:"부기장",name:"이호석",id:"P233007"},{no:148,pos:"부기장",name:"임창훈",id:"P253007"},{no:149,pos:"부기장",name:"장명근",id:"P223011"},{no:150,pos:"부기장",name:"장서연",id:"P253018"},{no:151,pos:"부기장",name:"정범수",id:"P243051"},{no:152,pos:"부기장",name:"정상균",id:"P223012"},{no:153,pos:"부기장",name:"정성원",id:"P702816"},{no:154,pos:"부기장",name:"정인보",id:"P233046"},
-  {no:155,pos:"부기장",name:"정진규",id:"P233047"},{no:156,pos:"부기장",name:"정한솔",id:"P233048"},{no:157,pos:"부기장",name:"정현우",id:"P263018"},{no:158,pos:"부기장",name:"조병준",id:"P702330"},{no:159,pos:"부기장",name:"조석현",id:"P243025"},{no:160,pos:"부기장",name:"조성진",id:"P604002"},{no:161,pos:"부기장",name:"조준상",id:"P243018"},{no:162,pos:"부기장",name:"채상원",id:"P263007"},{no:163,pos:"부기장",name:"최경민",id:"P263019"},{no:164,pos:"부기장",name:"최동찬",id:"P243037"},
-  {no:165,pos:"부기장",name:"최성원",id:"P263020"},{no:166,pos:"부기장",name:"최우석",id:"P233010"},{no:167,pos:"항로기장",name:"최우진",id:"P223001"},{no:168,pos:"부기장",name:"최윤준",id:"P243038"},{no:169,pos:"부기장",name:"최재원",id:"P223003"},{no:170,pos:"부기장",name:"최정웅",id:"P243052"},{no:171,pos:"부기장",name:"한유경",id:"P263021"},{no:172,pos:"부기장",name:"한재훈",id:"P243026"},{no:173,pos:"부기장",name:"한현재",id:"P253019"},{no:174,pos:"부기장",name:"허노준",id:"P263008"},
-  {no:175,pos:"부기장",name:"허완",id:"P233049"},{no:176,pos:"부기장",name:"현경원",id:"P253020"},{no:177,pos:"부기장",name:"홍경수",id:"P253008"},{no:178,pos:"부기장",name:"홍인식",id:"P233032"},{no:179,pos:"부기장",name:"홍진영",id:"P223013"},{no:180,pos:"부기장",name:"황성민",id:"P243019"}
+  {no:1,pos:"기장",name:"강달용",id:"P213011",joinYear:"",note:"",memo:""},{no:2,pos:"기장",name:"강상진",id:"P243039",joinYear:"",note:"",memo:""},{no:3,pos:"기장",name:"강성준",id:"P243002",joinYear:"",note:"",memo:""},{no:4,pos:"기장",name:"강호준",id:"P243027",joinYear:"",note:"",memo:""},{no:5,pos:"기장",name:"강흥건",id:"P233011",joinYear:"",note:"",memo:""},{no:6,pos:"기장",name:"경진수",id:"P203008",joinYear:"",note:"",memo:""},{no:7,pos:"기장",name:"고희덕",id:"P213001",joinYear:"",note:"",memo:""},{no:8,pos:"기장",name:"김경석",id:"P223006",joinYear:"",note:"",memo:""},{no:9,pos:"기장",name:"김경수",id:"P223005",joinYear:"",note:"",memo:""},{no:10,pos:"기장",name:"김길주",id:"P243040",joinYear:"",note:"",memo:""},
+  {no:11,pos:"기장",name:"김남호",id:"P243041",joinYear:"",note:"",memo:""},{no:12,pos:"기장",name:"김동섭",id:"P203018",joinYear:"",note:"",memo:""},{no:13,pos:"기장",name:"김동환",id:"P213002",joinYear:"",note:"",memo:""},{no:14,pos:"기장",name:"김선용",id:"P233033",joinYear:"",note:"",memo:""},{no:15,pos:"기장",name:"김세훈",id:"P243003",joinYear:"",note:"",memo:""},{no:16,pos:"기장",name:"김영길",id:"P243004",joinYear:"",note:"",memo:""},{no:17,pos:"기장",name:"김영준",id:"P233012",joinYear:"",note:"",memo:""},{no:18,pos:"기장",name:"김영필",id:"P203006",joinYear:"",note:"",memo:""},{no:19,pos:"기장",name:"김용식",id:"P233034",joinYear:"",note:"",memo:""},{no:20,pos:"기장",name:"김은수",id:"P203015",joinYear:"",note:"",memo:""},
+  {no:21,pos:"기장",name:"김일관",id:"P243005",joinYear:"",note:"",memo:""},{no:22,pos:"기장",name:"김지웅",id:"P203012",joinYear:"",note:"",memo:""},{no:23,pos:"기장",name:"김진환",id:"P203022",joinYear:"",note:"",memo:""},{no:24,pos:"기장",name:"김치윤",id:"P243006",joinYear:"",note:"",memo:""},{no:25,pos:"기장",name:"김홍진",id:"P233013",joinYear:"",note:"",memo:""},{no:26,pos:"기장",name:"김훈A",id:"P213003",joinYear:"",note:"",memo:""},{no:27,pos:"기장",name:"김훈B",id:"P243007",joinYear:"",note:"",memo:""},{no:28,pos:"기장",name:"나종석",id:"P243042",joinYear:"",note:"",memo:""},{no:29,pos:"기장",name:"남궁명",id:"P233014",joinYear:"",note:"",memo:""},{no:30,pos:"기장",name:"노영호",id:"P243028",joinYear:"",note:"",memo:""},
+  {no:31,pos:"기장",name:"박규태",id:"P213004",joinYear:"",note:"",memo:""},{no:32,pos:"기장",name:"박병열",id:"P233016",joinYear:"",note:"",memo:""},{no:33,pos:"기장",name:"박양주",id:"P243029",joinYear:"",note:"",memo:""},{no:34,pos:"기장",name:"박일호",id:"P213014",joinYear:"",note:"",memo:""},{no:35,pos:"기장",name:"박준성",id:"P233017",joinYear:"",note:"",memo:""},{no:36,pos:"기장",name:"박형근",id:"P213005",joinYear:"",note:"",memo:""},{no:37,pos:"기장",name:"배총태",id:"P203007",joinYear:"",note:"",memo:""},{no:38,pos:"기장",name:"서동철",id:"P233018",joinYear:"",note:"",memo:""},{no:39,pos:"기장",name:"서호균",id:"P203019",joinYear:"",note:"",memo:""},{no:40,pos:"기장",name:"송다비라",id:"P243030",joinYear:"",note:"",memo:""},
+  {no:41,pos:"기장",name:"송우익",id:"P243031",joinYear:"",note:"",memo:""},{no:42,pos:"기장",name:"신경호",id:"P233019",joinYear:"",note:"",memo:""},{no:43,pos:"기장",name:"신동훈",id:"P193002",joinYear:"",note:"",memo:""},{no:44,pos:"기장",name:"신민철",id:"P233020",joinYear:"",note:"",memo:""},{no:45,pos:"기장",name:"신지수",id:"P203004",joinYear:"",note:"",memo:""},{no:46,pos:"기장",name:"연정호",id:"P243043",joinYear:"",note:"",memo:""},{no:47,pos:"기장",name:"위충석",id:"P203001",joinYear:"",note:"",memo:""},{no:48,pos:"기장",name:"유민상",id:"P223007",joinYear:"",note:"",memo:""},{no:49,pos:"기장",name:"유우룡",id:"P203005",joinYear:"",note:"",memo:""},{no:50,pos:"기장",name:"윤세기",id:"P243008",joinYear:"",note:"",memo:""},
+  {no:51,pos:"기장",name:"윤완석",id:"P243020",joinYear:"",note:"",memo:""},{no:52,pos:"기장",name:"윤태선",id:"P223008",joinYear:"",note:"",memo:""},{no:53,pos:"기장",name:"이동수",id:"P213006",joinYear:"",note:"",memo:""},{no:54,pos:"기장",name:"이병문",id:"P243032",joinYear:"",note:"",memo:""},{no:55,pos:"기장",name:"이병욱",id:"P203010",joinYear:"",note:"",memo:""},{no:56,pos:"기장",name:"이석원",id:"P233022",joinYear:"",note:"",memo:""},{no:57,pos:"기장",name:"이세찬",id:"P243044",joinYear:"",note:"",memo:""},{no:58,pos:"기장",name:"이승현",id:"P233035",joinYear:"",note:"",memo:""},{no:59,pos:"기장",name:"이은상",id:"P193001",joinYear:"",note:"",memo:""},{no:60,pos:"기장",name:"이장헌",id:"P233023",joinYear:"",note:"",memo:""},
+  {no:61,pos:"기장",name:"이재현",id:"P233036",joinYear:"",note:"",memo:""},{no:62,pos:"기장",name:"이재형",id:"P243045",joinYear:"",note:"",memo:""},{no:63,pos:"기장",name:"이중엽",id:"P203002",joinYear:"",note:"",memo:""},{no:64,pos:"기장",name:"이창훈",id:"P243009",joinYear:"",note:"",memo:""},{no:65,pos:"기장",name:"이태권",id:"P243021",joinYear:"",note:"",memo:""},{no:66,pos:"기장",name:"이혁제",id:"P243010",joinYear:"",note:"",memo:""},{no:67,pos:"기장",name:"임동헌",id:"P243033",joinYear:"",note:"",memo:""},{no:68,pos:"기장",name:"임승곤",id:"P243034",joinYear:"",note:"",memo:""},{no:69,pos:"기장",name:"임원길",id:"P190001",joinYear:"",note:"",memo:""},{no:70,pos:"기장",name:"임준호",id:"P233037",joinYear:"",note:"",memo:""},
+  {no:71,pos:"기장",name:"장재원",id:"P243046",joinYear:"",note:"",memo:""},{no:72,pos:"기장",name:"전승호",id:"P233024",joinYear:"",note:"",memo:""},{no:73,pos:"기장",name:"전우태",id:"P243035",joinYear:"",note:"",memo:""},{no:74,pos:"기장",name:"전지혁",id:"P203011",joinYear:"",note:"",memo:""},{no:75,pos:"기장",name:"정권철",id:"P223009",joinYear:"",note:"",memo:""},{no:76,pos:"기장",name:"정남석",id:"P243022",joinYear:"",note:"",memo:""},{no:77,pos:"기장",name:"정재훈",id:"P213007",joinYear:"",note:"",memo:""},{no:78,pos:"기장",name:"정진수",id:"P233025",joinYear:"",note:"",memo:""},{no:79,pos:"기장",name:"정호영",id:"P213008",joinYear:"",note:"",memo:""},{no:80,pos:"기장",name:"정희중",id:"P213009",joinYear:"",note:"",memo:""},
+  {no:81,pos:"기장",name:"조성식",id:"P203009",joinYear:"",note:"",memo:""},{no:82,pos:"기장",name:"최봉근",id:"P243047",joinYear:"",note:"",memo:""},{no:83,pos:"기장",name:"최상준",id:"P233026",joinYear:"",note:"",memo:""},{no:84,pos:"기장",name:"한정권",id:"P213010",joinYear:"",note:"",memo:""},
+  {no:85,pos:"부기장",name:"구상회",id:"P233027",joinYear:"",note:"",memo:""},{no:86,pos:"부기장",name:"권기태",id:"P253011",joinYear:"",note:"",memo:""},{no:87,pos:"부기장",name:"김나성",id:"P233038",joinYear:"",note:"",memo:""},{no:88,pos:"부기장",name:"김동우B",id:"P900076",joinYear:"",note:"",memo:""},{no:89,pos:"부기장",name:"김동욱",id:"P213012",joinYear:"",note:"",memo:""},{no:90,pos:"부기장",name:"김동일",id:"P263014",joinYear:"",note:"",memo:""},{no:91,pos:"부기장",name:"김병욱",id:"P223010",joinYear:"",note:"",memo:""},{no:92,pos:"부기장",name:"김상연",id:"P243011",joinYear:"",note:"",memo:""},{no:93,pos:"부기장",name:"김선우",id:"P263001",joinYear:"",note:"",memo:""},{no:94,pos:"부기장",name:"김성훈",id:"P243023",joinYear:"",note:"",memo:""},
+  {no:95,pos:"부기장",name:"김승재",id:"P223002",joinYear:"",note:"",memo:""},{no:96,pos:"부기장",name:"김영걸",id:"P263002",joinYear:"",note:"",memo:""},{no:97,pos:"부기장",name:"김영석",id:"P233039",joinYear:"",note:"",memo:""},{no:98,pos:"부기장",name:"김영욱",id:"P803443",joinYear:"",note:"",memo:""},{no:99,pos:"부기장",name:"김우창",id:"P253013",joinYear:"",note:"",memo:""},{no:100,pos:"부기장",name:"김윤현",id:"P604105",joinYear:"",note:"",memo:""},{no:101,pos:"부기장",name:"김정환",id:"P253014",joinYear:"",note:"",memo:""},{no:102,pos:"부기장",name:"김지호",id:"P203013",joinYear:"",note:"",memo:""},{no:103,pos:"부기장",name:"김창균",id:"P263003",joinYear:"",note:"",memo:""},{no:104,pos:"부기장",name:"김태현",id:"P253002",joinYear:"",note:"",memo:""},
+  {no:105,pos:"부기장",name:"김현수",id:"P243012",joinYear:"",note:"",memo:""},{no:106,pos:"부기장",name:"김효승",id:"P223004",joinYear:"",note:"",memo:""},{no:107,pos:"부기장",name:"나종찬",id:"P233040",joinYear:"",note:"",memo:""},{no:108,pos:"부기장",name:"남성식",id:"P803303",joinYear:"",note:"",memo:""},{no:109,pos:"부기장",name:"문종태",id:"P243013",joinYear:"",note:"",memo:""},{no:110,pos:"부기장",name:"박성우",id:"P263004",joinYear:"",note:"",memo:""},{no:111,pos:"부기장",name:"박성욱",id:"P243014",joinYear:"",note:"",memo:""},{no:112,pos:"부기장",name:"박성진",id:"P243048",joinYear:"",note:"",memo:""},{no:113,pos:"부기장",name:"박영욱",id:"P243015",joinYear:"",note:"",memo:""},{no:114,pos:"부기장",name:"박의명",id:"P263005",joinYear:"",note:"",memo:""},
+  {no:115,pos:"부기장",name:"박의충",id:"P253003",joinYear:"",note:"",memo:""},{no:116,pos:"부기장",name:"박준회",id:"P233041",joinYear:"",note:"",memo:""},{no:117,pos:"부기장",name:"박태을",id:"P233002",joinYear:"",note:"",memo:""},{no:118,pos:"부기장",name:"배기현",id:"P233003",joinYear:"",note:"",memo:""},{no:119,pos:"부기장",name:"배재욱",id:"P263006",joinYear:"",note:"",memo:""},{no:120,pos:"부기장",name:"소병규",id:"P233042",joinYear:"",note:"",memo:""},{no:121,pos:"부기장",name:"손창우",id:"P900102",joinYear:"",note:"",memo:""},{no:122,pos:"부기장",name:"송승호",id:"P263015",joinYear:"",note:"",memo:""},{no:123,pos:"부기장",name:"송호섭",id:"P263016",joinYear:"",note:"",memo:""},{no:124,pos:"부기장",name:"신규철",id:"P263017",joinYear:"",note:"",memo:""},
+  {no:125,pos:"부기장",name:"심효영",id:"P803852",joinYear:"",note:"",memo:""},{no:126,pos:"부기장",name:"안상진",id:"P253015",joinYear:"",note:"",memo:""},{no:127,pos:"부기장",name:"윤정훈",id:"P233043",joinYear:"",note:"",memo:""},{no:128,pos:"부기장",name:"윤지열",id:"P243036",joinYear:"",note:"",memo:""},{no:129,pos:"부기장",name:"이관호",id:"P233044",joinYear:"",note:"",memo:""},{no:130,pos:"부기장",name:"이동건",id:"P253004",joinYear:"",note:"",memo:""},{no:131,pos:"부기장",name:"이민재",id:"P253017",joinYear:"",note:"",memo:""},{no:132,pos:"부기장",name:"이보행",id:"P253005",joinYear:"",note:"",memo:""},{no:133,pos:"부기장",name:"이상규",id:"P243016",joinYear:"",note:"",memo:""},{no:134,pos:"부기장",name:"이상호",id:"P203014",joinYear:"",note:"",memo:""},
+  {no:135,pos:"부기장",name:"이승민",id:"P213013",joinYear:"",note:"",memo:""},{no:136,pos:"부기장",name:"이은철",id:"P233005",joinYear:"",note:"",memo:""},{no:137,pos:"부기장",name:"이장영",id:"P203020",joinYear:"",note:"",memo:""},{no:138,pos:"부기장",name:"이재봉",id:"P253006",joinYear:"",note:"",memo:""},{no:139,pos:"부기장",name:"이재일",id:"P243049",joinYear:"",note:"",memo:""},{no:140,pos:"부기장",name:"이정곤",id:"P243017",joinYear:"",note:"",memo:""},{no:141,pos:"부기장",name:"이정준",id:"P701851",joinYear:"",note:"",memo:""},{no:142,pos:"부기장",name:"이정훈",id:"P203021",joinYear:"",note:"",memo:""},{no:143,pos:"부기장",name:"이준오",id:"P233006",joinYear:"",note:"",memo:""},{no:144,pos:"부기장",name:"이태호B",id:"P243050",joinYear:"",note:"",memo:""},
+  {no:145,pos:"부기장",name:"이하정",id:"P233045",joinYear:"",note:"",memo:""},{no:146,pos:"부기장",name:"이학현",id:"P243024",joinYear:"",note:"",memo:""},{no:147,pos:"부기장",name:"이호석",id:"P233007",joinYear:"",note:"",memo:""},{no:148,pos:"부기장",name:"임창훈",id:"P253007",joinYear:"",note:"",memo:""},{no:149,pos:"부기장",name:"장명근",id:"P223011",joinYear:"",note:"",memo:""},{no:150,pos:"부기장",name:"장서연",id:"P253018",joinYear:"",note:"",memo:""},{no:151,pos:"부기장",name:"정범수",id:"P243051",joinYear:"",note:"",memo:""},{no:152,pos:"부기장",name:"정상균",id:"P223012",joinYear:"",note:"",memo:""},{no:153,pos:"부기장",name:"정성원",id:"P702816",joinYear:"",note:"",memo:""},{no:154,pos:"부기장",name:"정인보",id:"P233046",joinYear:"",note:"",memo:""},
+  {no:155,pos:"부기장",name:"정진규",id:"P233047",joinYear:"",note:"",memo:""},{no:156,pos:"부기장",name:"정한솔",id:"P233048",joinYear:"",note:"",memo:""},{no:157,pos:"부기장",name:"정현우",id:"P263018",joinYear:"",note:"",memo:""},{no:158,pos:"부기장",name:"조병준",id:"P702330",joinYear:"",note:"",memo:""},{no:159,pos:"부기장",name:"조석현",id:"P243025",joinYear:"",note:"",memo:""},{no:160,pos:"부기장",name:"조성진",id:"P604002",joinYear:"",note:"",memo:""},{no:161,pos:"부기장",name:"조준상",id:"P243018",joinYear:"",note:"",memo:""},{no:162,pos:"부기장",name:"채상원",id:"P263007",joinYear:"",note:"",memo:""},{no:163,pos:"부기장",name:"최경민",id:"P263019",joinYear:"",note:"",memo:""},{no:164,pos:"부기장",name:"최동찬",id:"P243037",joinYear:"",note:"",memo:""},
+  {no:165,pos:"부기장",name:"최성원",id:"P263020",joinYear:"",note:"",memo:""},{no:166,pos:"부기장",name:"최우석",id:"P233010",joinYear:"",note:"",memo:""},{no:167,pos:"항로기장",name:"최우진",id:"P223001",joinYear:"",note:"",memo:""},{no:168,pos:"부기장",name:"최윤준",id:"P243038",joinYear:"",note:"",memo:""},{no:169,pos:"부기장",name:"최재원",id:"P223003",joinYear:"",note:"",memo:""},{no:170,pos:"부기장",name:"최정웅",id:"P243052",joinYear:"",note:"",memo:""},{no:171,pos:"부기장",name:"한유경",id:"P263021",joinYear:"",note:"",memo:""},{no:172,pos:"부기장",name:"한재훈",id:"P243026",joinYear:"",note:"",memo:""},{no:173,pos:"부기장",name:"한현재",id:"P253019",joinYear:"",note:"",memo:""},{no:174,pos:"부기장",name:"허노준",id:"P263008",joinYear:"",note:"",memo:""},
+  {no:175,pos:"부기장",name:"허완",id:"P233049",joinYear:"",note:"",memo:""},{no:176,pos:"부기장",name:"현경원",id:"P253020",joinYear:"",note:"",memo:""},{no:177,pos:"부기장",name:"홍경수",id:"P253008",joinYear:"",note:"",memo:""},{no:178,pos:"부기장",name:"홍인식",id:"P233032",joinYear:"",note:"",memo:""},{no:179,pos:"부기장",name:"홍진영",id:"P223013",joinYear:"",note:"",memo:""},{no:180,pos:"부기장",name:"황성민",id:"P243019",joinYear:"",note:"",memo:""}
 ];
 
 let records = [...rawData];
@@ -760,8 +870,111 @@ document.getElementById('today-date').textContent = new Date().toLocaleDateStrin
 const today = new Date();
 document.getElementById('f-date').value = today.toISOString().split('T')[0];
 document.getElementById('f-year').value = today.getFullYear();
-document.getElementById('name-list').innerHTML = memberBase.map(m=>`<option value="${m.name}">`).join('');
+document.getElementById('nm-year').value = today.getFullYear();
+updateNameList();
 
+function updateNameList() {
+  document.getElementById('name-list').innerHTML = memberBase.map(m=>`<option value="${m.name}">`).join('');
+}
+
+// ── Toast ──
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ── ID Preview & Auto-gen ──
+function updateIdPreview() {
+  const idVal = document.getElementById('nm-id').value.trim();
+  const preview = document.getElementById('id-preview');
+  if (idVal) {
+    const exists = memberBase.some(m => m.id === idVal);
+    if (exists) {
+      preview.textContent = '⚠ 이미 사용 중인 사번입니다';
+      preview.style.color = 'var(--red-text)';
+      preview.classList.remove('ready');
+    } else {
+      preview.textContent = '✓ 사용 가능한 사번';
+      preview.style.color = 'var(--green-text)';
+      preview.classList.add('ready');
+    }
+  } else {
+    preview.textContent = '사번을 입력하거나 자동생성 버튼을 누르세요';
+    preview.style.color = '';
+    preview.classList.remove('ready');
+  }
+}
+
+function autoGenId() {
+  // Pattern: P + 2-digit year + 3-digit seq, same as existing
+  const yr = String(today.getFullYear()).slice(2);
+  const prefix = 'P' + yr;
+  const existing = memberBase
+    .map(m => m.id)
+    .filter(id => id.startsWith(prefix))
+    .map(id => parseInt(id.slice(3)) || 0);
+  const maxSeq = existing.length > 0 ? Math.max(...existing) : 0;
+  const newId = prefix + String(maxSeq + 1).padStart(3, '0');
+  document.getElementById('nm-id').value = newId;
+  updateIdPreview();
+}
+
+// ── New Member ──
+function openNewMemberModal() {
+  document.getElementById('nm-name').value = '';
+  document.getElementById('nm-pos').value = '부기장';
+  document.getElementById('nm-id').value = '';
+  document.getElementById('nm-year').value = today.getFullYear();
+  document.getElementById('nm-note').value = '신규';
+  document.getElementById('nm-memo').value = '';
+  document.getElementById('id-preview').textContent = '사번을 입력하거나 자동생성 버튼을 누르세요';
+  document.getElementById('id-preview').style.color = '';
+  document.getElementById('id-preview').classList.remove('ready');
+  document.getElementById('new-member-modal').classList.add('open');
+  setTimeout(() => document.getElementById('nm-name').focus(), 100);
+}
+
+function addNewMember() {
+  const name = document.getElementById('nm-name').value.trim();
+  const pos = document.getElementById('nm-pos').value;
+  const id = document.getElementById('nm-id').value.trim();
+  const joinYear = document.getElementById('nm-year').value.trim();
+  const note = document.getElementById('nm-note').value.trim();
+  const memo = document.getElementById('nm-memo').value.trim();
+
+  if (!name) { alert('이름을 입력해주세요.'); return; }
+  if (!id) { alert('사번을 입력하거나 자동생성 버튼을 눌러주세요.'); return; }
+
+  if (memberBase.some(m => m.name === name)) {
+    alert(`이미 같은 이름(${name})의 승무원이 명부에 있습니다.\n이름 뒤에 A/B 등을 붙여 구분해주세요.`);
+    return;
+  }
+  if (memberBase.some(m => m.id === id)) {
+    alert(`이미 사용 중인 사번(${id})입니다. 다른 사번을 입력해주세요.`);
+    return;
+  }
+
+  const newNo = memberBase.length + 1;
+  memberBase.push({ no: newNo, pos, name, id, joinYear, note, memo });
+
+  // Renumber
+  memberBase.forEach((m, i) => m.no = i + 1);
+  updateNameList();
+
+  closeModal('new-member-modal');
+  showToast(`✦ ${name} 승무원이 명부에 등록되었습니다`);
+
+  // Switch to members page
+  const membersNav = document.querySelector('.nav-item:nth-child(2)');
+  switchPage('members', membersNav);
+  renderMembers();
+  renderDashboard();
+}
+
+// ── Score calculations ──
 function getScores() {
   const s = {};
   records.forEach(r => {
@@ -770,31 +983,27 @@ function getScores() {
   });
   return s;
 }
-
 function calcTotal(name) {
   const s = getScores()[name];
   return s ? 100 - s.penalty + s.reward : 100;
 }
-
 function scoreClass(t) {
   if (t > 100) return 'score-great';
   if (t === 100) return 'score-ok';
   return 'score-warn';
 }
-
 function scoreColor(t) {
   if (t > 100) return 'var(--blue-text)';
   if (t === 100) return 'var(--green-text)';
   return 'var(--amber-text)';
 }
 
-// --- Dashboard filters ---
+// ── Dashboard filters ──
 function getDashFiltered() {
   const yf = document.getElementById('dash-year').value;
   const pf = document.getElementById('dash-pos').value;
   return records.filter(r => {
     if (yf !== 'all' && String(r.year) !== yf) return false;
-    // match pos: records may have '-' for non-member entries; match memberBase pos when filtering
     if (pf !== 'all') {
       const m = memberBase.find(x=>x.name===r.name);
       const rPos = m ? m.pos : r.pos;
@@ -812,7 +1021,7 @@ function updateDashYearFilter() {
   if ([...sel.options].some(o=>o.value===cur)) sel.value = cur;
 }
 
-// --- Dashboard ---
+// ── Dashboard ──
 function renderDashboard() {
   updateDashYearFilter();
   renderMetrics();
@@ -826,7 +1035,6 @@ function renderMetrics() {
   const totalRew = filtered.filter(r=>r.type==='상점').reduce((a,r)=>a+r.score,0);
   const pf = document.getElementById('dash-pos').value;
   const yf = document.getElementById('dash-year').value;
-  // warn count: always based on cumulative all-time scores, but filter by pos if set
   const warnCount = memberBase.filter(m => {
     if (pf !== 'all' && m.pos !== pf) return false;
     return calcTotal(m.name) < 100;
@@ -855,14 +1063,12 @@ function renderCharts() {
     <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#4caf7d"></span>상점 ${totalRew}점</span>
   `;
 
-  // year trend chart — if year filter is set show monthly breakdown, else show yearly
   const yf = document.getElementById('dash-year').value;
   const pf = document.getElementById('dash-pos').value;
   const titleEl = document.getElementById('year-chart-title');
   if (yearChartInst) yearChartInst.destroy();
   if (yf !== 'all') {
     titleEl.textContent = yf + '년 월별 상벌점 현황';
-    // Monthly breakdown for selected year
     const months = Array.from({length:12},(_,i)=>i+1);
     const penByMonth = months.map(m=>records.filter(r=>{
       if (r.year !== parseInt(yf) || r.type !== '벌점') return false;
@@ -876,18 +1082,14 @@ function renderCharts() {
     }).reduce((a,r)=>a+r.score,0));
     yearChartInst = new Chart(document.getElementById('yearChart'), {
       type: 'bar',
-      data: {
-        labels: months.map(m=>m+'월'),
-        datasets: [
-          {label:'벌점',data:penByMonth,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4},
-          {label:'상점',data:rewByMonth,backgroundColor:'rgba(76,175,125,0.5)',borderColor:'#4caf7d',borderWidth:1,borderRadius:4}
-        ]
-      },
+      data: {labels:months.map(m=>m+'월'),datasets:[
+        {label:'벌점',data:penByMonth,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4},
+        {label:'상점',data:rewByMonth,backgroundColor:'rgba(76,175,125,0.5)',borderColor:'#4caf7d',borderWidth:1,borderRadius:4}
+      ]},
       options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b93a8',font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#555e75'},grid:{display:false}}}}
     });
   } else {
     titleEl.textContent = pf !== 'all' ? pf + ' · 연도별 벌점 추이' : '연도별 직급별 벌점 추이';
-    // Yearly stacked by pos when pos=all, or simple when pos set
     const years = [...new Set(records.map(r=>r.year))].sort();
     const positions = ['기장','부기장','항로기장'];
     const posColors = ['rgba(79,142,247,0.7)','rgba(224,82,82,0.7)','rgba(224,158,79,0.7)'];
@@ -899,9 +1101,7 @@ function renderCharts() {
           const mb=memberBase.find(x=>x.name===r.name);
           return (mb?mb.pos:r.pos)===p;
         }).reduce((a,r)=>a+r.score,0)),
-        backgroundColor: posColors[i],
-        borderWidth:0,
-        borderRadius:3
+        backgroundColor: posColors[i], borderWidth:0, borderRadius:3
       }));
       yearChartInst = new Chart(document.getElementById('yearChart'), {
         type: 'bar',
@@ -918,11 +1118,8 @@ function renderCharts() {
     }
   }
 
-  // Top penalty chart filtered
   const scoreMap = {};
-  filtered.filter(r=>r.type==='벌점').forEach(r => {
-    scoreMap[r.name] = (scoreMap[r.name]||0) + r.score;
-  });
+  filtered.filter(r=>r.type==='벌점').forEach(r => { scoreMap[r.name] = (scoreMap[r.name]||0) + r.score; });
   const top = Object.entries(scoreMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
   if (topChartInst) topChartInst.destroy();
   topChartInst = new Chart(document.getElementById('topChart'), {
@@ -936,8 +1133,7 @@ function renderRecent() {
   const filtered = getDashFiltered();
   const sorted = [...filtered].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
   document.getElementById('recent-body').innerHTML = sorted.length
-    ? sorted.map(r=>`
-    <tr>
+    ? sorted.map(r=>`<tr>
       <td class="mono" style="color:var(--text2);font-size:12px">${r.date}</td>
       <td style="font-weight:500">${r.name}</td>
       <td style="color:var(--text2)">${r.pos}</td>
@@ -948,7 +1144,7 @@ function renderRecent() {
     : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">해당 조건의 이력이 없습니다</td></tr>';
 }
 
-// --- Members ---
+// ── Members ──
 function filterPos(p, el) {
   posFilter = p;
   document.querySelectorAll('#pos-tabs .view-tab').forEach(t=>t.classList.remove('active'));
@@ -968,6 +1164,9 @@ function renderMembers() {
     if (sf === 'warn' && t >= 100) return false;
     return true;
   });
+
+  document.getElementById('member-count-badge').textContent = memberBase.length + '명';
+
   const sc = getScores();
   document.getElementById('member-body').innerHTML = list.map(m => {
     const s = sc[m.name];
@@ -975,11 +1174,14 @@ function renderMembers() {
     const rew = s ? s.reward : 0;
     const total = 100 - pen + rew;
     const mi = memberBase.indexOf(m);
+    const isNew = m.note && m.note.includes('신규');
     return `<tr>
       <td class="mono" style="color:var(--text3);font-size:12px">${m.no}</td>
       <td style="color:var(--text2)">${m.pos}</td>
-      <td style="font-weight:500">${m.name}</td>
+      <td style="font-weight:500">${m.name}${isNew ? '<span class="badge badge-new">NEW</span>' : ''}</td>
       <td class="mono" style="color:var(--text3);font-size:12px">${m.id}</td>
+      <td class="mono" style="color:var(--text3);font-size:12px">${m.joinYear || '—'}</td>
+      <td style="color:var(--text3);font-size:12px">${m.note || '—'}</td>
       <td>${pen > 0 ? `<span class="num-red">${pen}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
       <td>${rew > 0 ? `<span class="num-green">${rew}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
       <td><span class="score-pill ${scoreClass(total)}">${total}점</span></td>
@@ -989,7 +1191,7 @@ function renderMembers() {
   }).join('');
 }
 
-// --- History ---
+// ── History ──
 function updateYearFilter() {
   const years = [...new Set(records.map(r=>r.year))].sort();
   const sel = document.getElementById('hist-year');
@@ -1025,7 +1227,7 @@ function renderHistory() {
     : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">해당 조건의 이력이 없습니다</td></tr>';
 }
 
-// --- Edit record ---
+// ── Edit record ──
 let editIdx = -1;
 
 function openEditModal(idx) {
@@ -1054,28 +1256,22 @@ function saveEdit() {
   records[editIdx] = {year, date, name, pos, type, score, reason};
   editIdx = -1;
   closeModal('edit-modal');
-  renderDashboard();
-  renderHistory();
-  renderMembers();
+  renderDashboard(); renderHistory(); renderMembers();
 }
 
-// --- Page switching ---
+// ── Page switching ──
 function switchPage(name, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
   if (name === 'members') renderMembers();
   if (name === 'history') { updateYearFilter(); renderHistory(); }
 }
 
-// --- Modals ---
-function openAddModal() {
-  document.getElementById('add-modal').classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
+// ── Modals ──
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 document.getElementById('f-name').addEventListener('change', function() {
   const m = memberBase.find(x=>x.name===this.value);
@@ -1096,21 +1292,19 @@ function addRecord() {
   document.getElementById('f-name').value = '';
   document.getElementById('f-reason').value = '';
   renderDashboard();
+  showToast(`${type} 기록이 추가되었습니다`);
 }
 
-// --- Delete member (승무원 삭제) ---
+// ── Delete member ──
 function deleteMember(idx, name) {
   if (!confirm(`${name} 승무원을 명부에서 삭제하시겠습니까?\n(해당 승무원의 이력도 함께 삭제됩니다)`)) return;
   memberBase.splice(idx, 1);
-  // renumber
   memberBase.forEach((m, i) => m.no = i + 1);
-  // remove associated records
   for (let i = records.length - 1; i >= 0; i--) {
     if (records[i].name === name) records.splice(i, 1);
   }
-  renderDashboard();
-  renderMembers();
-  renderHistory();
+  updateNameList();
+  renderDashboard(); renderMembers(); renderHistory();
 }
 
 function openPersonModal(name, pos, id) {
@@ -1126,7 +1320,7 @@ function openPersonModal(name, pos, id) {
   document.getElementById('pm-reward').textContent = rew + '점';
   const hist = records.filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('pm-history').innerHTML = hist.length
-    ? hist.map(r=>{
+    ? hist.map(r => {
         const idx = records.indexOf(r);
         return `<tr>
           <td class="mono" style="color:var(--text3);font-size:12px">${r.year}</td>
@@ -1141,11 +1335,9 @@ function openPersonModal(name, pos, id) {
   document.getElementById('person-modal').classList.add('open');
 }
 
-document.getElementById('add-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('add-modal'); });
-document.getElementById('person-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('person-modal'); });
-document.getElementById('edit-modal').addEventListener('click', function(e){ if(e.target===this) closeModal('edit-modal'); });
-
-// renderDashboard() is called after password unlock
+['add-modal','person-modal','edit-modal','new-member-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
 </script>
 </body>
 </html>
