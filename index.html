@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>운항승무원 상벌점 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -808,7 +808,8 @@ function tryUnlock() {
     setTimeout(() => {
       ls.style.display = 'none';
       document.getElementById('main-shell').style.display = 'flex';
-      renderDashboard();
+      // ★ 수정: requestAnimationFrame + setTimeout으로 canvas가 완전히 렌더링된 후 차트 초기화
+      requestAnimationFrame(() => setTimeout(renderDashboard, 80));
     }, 300);
   } else {
     document.getElementById('lock-error').textContent = '비밀번호가 올바르지 않습니다';
@@ -909,7 +910,6 @@ function updateIdPreview() {
 }
 
 function autoGenId() {
-  // Pattern: P + 2-digit year + 3-digit seq, same as existing
   const yr = String(today.getFullYear()).slice(2);
   const prefix = 'P' + yr;
   const existing = memberBase
@@ -959,15 +959,12 @@ function addNewMember() {
 
   const newNo = memberBase.length + 1;
   memberBase.push({ no: newNo, pos, name, id, joinYear, note, memo });
-
-  // Renumber
   memberBase.forEach((m, i) => m.no = i + 1);
   updateNameList();
 
   closeModal('new-member-modal');
   showToast(`✦ ${name} 승무원이 명부에 등록되었습니다`);
 
-  // Switch to members page
   const membersNav = document.querySelector('.nav-item:nth-child(2)');
   switchPage('members', membersNav);
   renderMembers();
@@ -1048,12 +1045,23 @@ function renderMetrics() {
   `;
 }
 
+// ★ 핵심 수정: 차트 인스턴스를 destroy 후 canvas를 교체해서 깨끗하게 재생성
+function freshCanvas(id) {
+  const old = document.getElementById(id);
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = id;
+  old.parentNode.replaceChild(newCanvas, old);
+  return newCanvas;
+}
+
 function renderCharts() {
   const filtered = getDashFiltered();
   const totalPen = filtered.filter(r=>r.type==='벌점').reduce((a,r)=>a+r.score,0);
   const totalRew = filtered.filter(r=>r.type==='상점').reduce((a,r)=>a+r.score,0);
-  if (typeChartInst) typeChartInst.destroy();
-  typeChartInst = new Chart(document.getElementById('typeChart'), {
+
+  // 유형별 현황 (도넛)
+  if (typeChartInst) { typeChartInst.destroy(); typeChartInst = null; }
+  typeChartInst = new Chart(freshCanvas('typeChart'), {
     type: 'doughnut',
     data: {labels:['벌점','상점'],datasets:[{data:[totalPen,totalRew],backgroundColor:['#e05252','#4caf7d'],borderWidth:0,hoverOffset:4}]},
     options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}
@@ -1063,10 +1071,12 @@ function renderCharts() {
     <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#4caf7d"></span>상점 ${totalRew}점</span>
   `;
 
+  // 연도별 추이
   const yf = document.getElementById('dash-year').value;
   const pf = document.getElementById('dash-pos').value;
   const titleEl = document.getElementById('year-chart-title');
-  if (yearChartInst) yearChartInst.destroy();
+  if (yearChartInst) { yearChartInst.destroy(); yearChartInst = null; }
+
   if (yf !== 'all') {
     titleEl.textContent = yf + '년 월별 상벌점 현황';
     const months = Array.from({length:12},(_,i)=>i+1);
@@ -1080,7 +1090,7 @@ function renderCharts() {
       if (pf !== 'all') { const mb=memberBase.find(x=>x.name===r.name); if ((mb?mb.pos:r.pos)!==pf) return false; }
       return parseInt((r.date||'').split('-')[1]) === m;
     }).reduce((a,r)=>a+r.score,0));
-    yearChartInst = new Chart(document.getElementById('yearChart'), {
+    yearChartInst = new Chart(freshCanvas('yearChart'), {
       type: 'bar',
       data: {labels:months.map(m=>m+'월'),datasets:[
         {label:'벌점',data:penByMonth,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4},
@@ -1103,14 +1113,14 @@ function renderCharts() {
         }).reduce((a,r)=>a+r.score,0)),
         backgroundColor: posColors[i], borderWidth:0, borderRadius:3
       }));
-      yearChartInst = new Chart(document.getElementById('yearChart'), {
+      yearChartInst = new Chart(freshCanvas('yearChart'), {
         type: 'bar',
         data: {labels:years.map(String), datasets},
         options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b93a8',font:{size:11}}}},scales:{y:{beginAtZero:true,stacked:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{stacked:true,ticks:{color:'#555e75'},grid:{display:false}}}}
       });
     } else {
       const yearPen = years.map(y=>records.filter(r=>r.year===y&&r.type==='벌점'&&(()=>{const mb=memberBase.find(x=>x.name===r.name);return(mb?mb.pos:r.pos)===pf;})()).reduce((a,r)=>a+r.score,0));
-      yearChartInst = new Chart(document.getElementById('yearChart'), {
+      yearChartInst = new Chart(freshCanvas('yearChart'), {
         type: 'bar',
         data: {labels:years.map(String),datasets:[{label:'벌점',data:yearPen,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4}]},
         options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#555e75'},grid:{display:false}}}}
@@ -1118,11 +1128,12 @@ function renderCharts() {
     }
   }
 
+  // 벌점 상위 인원
   const scoreMap = {};
   filtered.filter(r=>r.type==='벌점').forEach(r => { scoreMap[r.name] = (scoreMap[r.name]||0) + r.score; });
   const top = Object.entries(scoreMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  if (topChartInst) topChartInst.destroy();
-  topChartInst = new Chart(document.getElementById('topChart'), {
+  if (topChartInst) { topChartInst.destroy(); topChartInst = null; }
+  topChartInst = new Chart(freshCanvas('topChart'), {
     type: 'bar',
     data: {labels:top.map(([n])=>n),datasets:[{label:'벌점',data:top.map(([,v])=>v),backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4}]},
     options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#8b93a8'},grid:{display:false}}}}
@@ -1267,6 +1278,8 @@ function switchPage(name, el) {
   if (el) el.classList.add('active');
   if (name === 'members') renderMembers();
   if (name === 'history') { updateYearFilter(); renderHistory(); }
+  // ★ 대시보드 탭으로 돌아올 때도 차트 재렌더링
+  if (name === 'dashboard') requestAnimationFrame(() => setTimeout(renderDashboard, 50));
 }
 
 // ── Modals ──
