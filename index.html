@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>운항승무원 상벌점 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -864,7 +863,152 @@ const memberBase = [
 
 let records = [...rawData];
 let posFilter = '전체';
-let typeChartInst, yearChartInst, topChartInst;
+
+// ── 순수 Canvas 차트 엔진 (Chart.js 불필요) ──
+const C = {
+  clear(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
+    if (!canvas) return null;
+    const w = canvas.offsetWidth || canvas.parentElement.offsetWidth || 400;
+    const h = canvas.offsetHeight || canvas.parentElement.offsetHeight || 180;
+    canvas.width = w * devicePixelRatio;
+    canvas.height = h * devicePixelRatio;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.clearRect(0, 0, w, h);
+    return {ctx, w, h};
+  },
+
+  doughnut(id, pen, rew) {
+    const r = C.clear(id); if (!r) return;
+    const {ctx, w, h} = r;
+    const cx = w / 2, cy = h / 2, radius = Math.min(w, h) * 0.42, inner = radius * 0.65;
+    const total = pen + rew || 1;
+    const slices = [{v: pen, c: '#e05252'}, {v: rew, c: '#4caf7d'}];
+    let angle = -Math.PI / 2;
+    slices.forEach(s => {
+      const sweep = (s.v / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, angle, angle + sweep);
+      ctx.closePath();
+      ctx.fillStyle = s.c;
+      ctx.fill();
+      angle += sweep;
+    });
+    // inner hole
+    ctx.beginPath();
+    ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+    ctx.fillStyle = '#161b27';
+    ctx.fill();
+    // center label
+    ctx.fillStyle = '#e8eaf0';
+    ctx.font = 'bold 14px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(total + '점', cx, cy);
+  },
+
+  bar(id, labels, datasets, opts = {}) {
+    const r = C.clear(id); if (!r) return;
+    const {ctx, w, h} = r;
+    const pad = {t: 12, r: 12, b: 32, l: 28};
+    const chartW = w - pad.l - pad.r;
+    const chartH = h - pad.t - pad.b;
+    const stacked = opts.stacked || false;
+
+    // compute max
+    let maxVal = 0;
+    if (stacked) {
+      labels.forEach((_, i) => {
+        const sum = datasets.reduce((a, d) => a + (d.data[i] || 0), 0);
+        if (sum > maxVal) maxVal = sum;
+      });
+    } else {
+      datasets.forEach(d => d.data.forEach(v => { if (v > maxVal) maxVal = v; }));
+    }
+    maxVal = Math.max(maxVal, 1);
+    const step = maxVal <= 3 ? 1 : maxVal <= 6 ? 2 : Math.ceil(maxVal / 4);
+    const gridMax = Math.ceil(maxVal / step) * step;
+
+    // grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 0.5;
+    for (let v = 0; v <= gridMax; v += step) {
+      const y = pad.t + chartH - (v / gridMax) * chartH;
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + chartW, y); ctx.stroke();
+      ctx.fillStyle = '#555e75';
+      ctx.font = '10px DM Mono, monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(v, pad.l - 4, y);
+    }
+
+    // bars
+    const n = labels.length;
+    const groupW = chartW / n;
+    const dsCount = datasets.length;
+    const barPad = groupW * 0.15;
+    const barW = stacked ? groupW * 0.55 : (groupW - barPad * 2) / dsCount * 0.85;
+
+    labels.forEach((lbl, i) => {
+      const gx = pad.l + i * groupW;
+      if (stacked) {
+        let base = 0;
+        datasets.forEach(d => {
+          const v = d.data[i] || 0;
+          if (v === 0) return;
+          const bh = (v / gridMax) * chartH;
+          const bx = gx + groupW / 2 - barW / 2;
+          const by = pad.t + chartH - ((base + v) / gridMax) * chartH;
+          ctx.fillStyle = d.color;
+          ctx.beginPath();
+          ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]);
+          ctx.fill();
+          base += v;
+        });
+      } else {
+        datasets.forEach((d, di) => {
+          const v = d.data[i] || 0;
+          if (v === 0) return;
+          const bh = (v / gridMax) * chartH;
+          const bx = gx + barPad + di * (barW + 2);
+          const by = pad.t + chartH - bh;
+          ctx.fillStyle = d.color;
+          ctx.beginPath();
+          ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]);
+          ctx.fill();
+        });
+      }
+      // x label
+      ctx.fillStyle = '#8b93a8';
+      ctx.font = '10px Noto Sans KR, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const shortLbl = lbl.length > 4 ? lbl.slice(0, 4) + '…' : lbl;
+      ctx.fillText(shortLbl, gx + groupW / 2, pad.t + chartH + 6);
+    });
+
+    // legend
+    if (opts.legend && datasets.length > 1) {
+      let lx = pad.l;
+      datasets.forEach(d => {
+        ctx.fillStyle = d.color;
+        ctx.fillRect(lx, 2, 8, 8);
+        ctx.fillStyle = '#8b93a8';
+        ctx.font = '10px Noto Sans KR, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(d.label, lx + 11, 2);
+        lx += ctx.measureText(d.label).width + 26;
+      });
+    }
+  }
+};
 
 // Init
 document.getElementById('today-date').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) + ' 기준';
@@ -1045,27 +1189,13 @@ function renderMetrics() {
   `;
 }
 
-// ★ 핵심 수정: 차트 인스턴스를 destroy 후 canvas를 교체해서 깨끗하게 재생성
-function freshCanvas(id) {
-  const old = document.getElementById(id);
-  const newCanvas = document.createElement('canvas');
-  newCanvas.id = id;
-  old.parentNode.replaceChild(newCanvas, old);
-  return newCanvas;
-}
-
 function renderCharts() {
   const filtered = getDashFiltered();
   const totalPen = filtered.filter(r=>r.type==='벌점').reduce((a,r)=>a+r.score,0);
   const totalRew = filtered.filter(r=>r.type==='상점').reduce((a,r)=>a+r.score,0);
 
   // 유형별 현황 (도넛)
-  if (typeChartInst) { typeChartInst.destroy(); typeChartInst = null; }
-  typeChartInst = new Chart(freshCanvas('typeChart'), {
-    type: 'doughnut',
-    data: {labels:['벌점','상점'],datasets:[{data:[totalPen,totalRew],backgroundColor:['#e05252','#4caf7d'],borderWidth:0,hoverOffset:4}]},
-    options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}
-  });
+  C.doughnut('typeChart', totalPen, totalRew);
   document.getElementById('type-legend').innerHTML = `
     <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#e05252"></span>벌점 ${totalPen}점</span>
     <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#4caf7d"></span>상점 ${totalRew}점</span>
@@ -1074,11 +1204,11 @@ function renderCharts() {
   // 연도별 추이
   const yf = document.getElementById('dash-year').value;
   const pf = document.getElementById('dash-pos').value;
-  const titleEl = document.getElementById('year-chart-title');
-  if (yearChartInst) { yearChartInst.destroy(); yearChartInst = null; }
+  document.getElementById('year-chart-title').textContent =
+    yf !== 'all' ? yf + '년 월별 상벌점 현황' :
+    pf !== 'all' ? pf + ' · 연도별 벌점 추이' : '연도별 직급별 벌점 추이';
 
   if (yf !== 'all') {
-    titleEl.textContent = yf + '년 월별 상벌점 현황';
     const months = Array.from({length:12},(_,i)=>i+1);
     const penByMonth = months.map(m=>records.filter(r=>{
       if (r.year !== parseInt(yf) || r.type !== '벌점') return false;
@@ -1090,41 +1220,21 @@ function renderCharts() {
       if (pf !== 'all') { const mb=memberBase.find(x=>x.name===r.name); if ((mb?mb.pos:r.pos)!==pf) return false; }
       return parseInt((r.date||'').split('-')[1]) === m;
     }).reduce((a,r)=>a+r.score,0));
-    yearChartInst = new Chart(freshCanvas('yearChart'), {
-      type: 'bar',
-      data: {labels:months.map(m=>m+'월'),datasets:[
-        {label:'벌점',data:penByMonth,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4},
-        {label:'상점',data:rewByMonth,backgroundColor:'rgba(76,175,125,0.5)',borderColor:'#4caf7d',borderWidth:1,borderRadius:4}
-      ]},
-      options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b93a8',font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#555e75'},grid:{display:false}}}}
-    });
+    C.bar('yearChart', months.map(m=>m+'월'), [
+      {label:'벌점', data:penByMonth, color:'rgba(224,82,82,0.75)'},
+      {label:'상점', data:rewByMonth, color:'rgba(76,175,125,0.65)'}
+    ], {legend:true});
   } else {
-    titleEl.textContent = pf !== 'all' ? pf + ' · 연도별 벌점 추이' : '연도별 직급별 벌점 추이';
     const years = [...new Set(records.map(r=>r.year))].sort();
-    const positions = ['기장','부기장','항로기장'];
-    const posColors = ['rgba(79,142,247,0.7)','rgba(224,82,82,0.7)','rgba(224,158,79,0.7)'];
     if (pf === 'all') {
-      const datasets = positions.map((p,i) => ({
-        label: p,
-        data: years.map(y=>records.filter(r=>{
-          if (r.year!==y||r.type!=='벌점') return false;
-          const mb=memberBase.find(x=>x.name===r.name);
-          return (mb?mb.pos:r.pos)===p;
-        }).reduce((a,r)=>a+r.score,0)),
-        backgroundColor: posColors[i], borderWidth:0, borderRadius:3
-      }));
-      yearChartInst = new Chart(freshCanvas('yearChart'), {
-        type: 'bar',
-        data: {labels:years.map(String), datasets},
-        options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b93a8',font:{size:11}}}},scales:{y:{beginAtZero:true,stacked:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{stacked:true,ticks:{color:'#555e75'},grid:{display:false}}}}
-      });
+      C.bar('yearChart', years.map(String), [
+        {label:'기장', data: years.map(y=>records.filter(r=>{if(r.year!==y||r.type!=='벌점')return false;const mb=memberBase.find(x=>x.name===r.name);return(mb?mb.pos:r.pos)==='기장';}).reduce((a,r)=>a+r.score,0)), color:'rgba(79,142,247,0.75)'},
+        {label:'부기장', data: years.map(y=>records.filter(r=>{if(r.year!==y||r.type!=='벌점')return false;const mb=memberBase.find(x=>x.name===r.name);return(mb?mb.pos:r.pos)==='부기장';}).reduce((a,r)=>a+r.score,0)), color:'rgba(224,82,82,0.75)'},
+        {label:'항로기장', data: years.map(y=>records.filter(r=>{if(r.year!==y||r.type!=='벌점')return false;const mb=memberBase.find(x=>x.name===r.name);return(mb?mb.pos:r.pos)==='항로기장';}).reduce((a,r)=>a+r.score,0)), color:'rgba(224,158,79,0.75)'}
+      ], {stacked:true, legend:true});
     } else {
       const yearPen = years.map(y=>records.filter(r=>r.year===y&&r.type==='벌점'&&(()=>{const mb=memberBase.find(x=>x.name===r.name);return(mb?mb.pos:r.pos)===pf;})()).reduce((a,r)=>a+r.score,0));
-      yearChartInst = new Chart(freshCanvas('yearChart'), {
-        type: 'bar',
-        data: {labels:years.map(String),datasets:[{label:'벌점',data:yearPen,backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4}]},
-        options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#555e75'},grid:{display:false}}}}
-      });
+      C.bar('yearChart', years.map(String), [{label:'벌점', data:yearPen, color:'rgba(224,82,82,0.75)'}]);
     }
   }
 
@@ -1132,12 +1242,7 @@ function renderCharts() {
   const scoreMap = {};
   filtered.filter(r=>r.type==='벌점').forEach(r => { scoreMap[r.name] = (scoreMap[r.name]||0) + r.score; });
   const top = Object.entries(scoreMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  if (topChartInst) { topChartInst.destroy(); topChartInst = null; }
-  topChartInst = new Chart(freshCanvas('topChart'), {
-    type: 'bar',
-    data: {labels:top.map(([n])=>n),datasets:[{label:'벌점',data:top.map(([,v])=>v),backgroundColor:'rgba(224,82,82,0.6)',borderColor:'#e05252',borderWidth:1,borderRadius:4}]},
-    options: {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#555e75'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#8b93a8'},grid:{display:false}}}}
-  });
+  C.bar('topChart', top.map(([n])=>n), [{label:'벌점', data:top.map(([,v])=>v), color:'rgba(224,82,82,0.75)'}]);
 }
 
 function renderRecent() {
@@ -1350,6 +1455,15 @@ function openPersonModal(name, pos, id) {
 
 ['add-modal','person-modal','edit-modal','new-member-modal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
+
+// 창 크기 변경 시 차트 재렌더링
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (document.getElementById('page-dashboard').classList.contains('active')) renderCharts();
+  }, 150);
 });
 </script>
 </body>
