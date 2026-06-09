@@ -498,7 +498,13 @@
     <div class="sidebar-bottom">
       <button class="add-btn" onclick="openAddModal()">+ 상벌점 기록 추가</button>
       <button class="add-btn-secondary" onclick="openNewMemberModal()">+ 신규 승무원 등록</button>
+      <div style="display:flex;gap:8px">
+        <button class="add-btn-reset" style="flex:1" onclick="exportData()">⤓ 백업 내보내기</button>
+        <button class="add-btn-reset" style="flex:1" onclick="document.getElementById('import-file').click()">⤒ 백업 불러오기</button>
+      </div>
       <button class="add-btn-reset" onclick="resetState()">↺ 기본 데이터로 초기화</button>
+      <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importData(this)">
+      <div id="storage-status" style="font-size:10px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace;min-height:14px"></div>
     </div>
   </aside>
 
@@ -824,6 +830,13 @@ function tryUnlock() {
       ls.style.display = 'none';
       document.getElementById('main-shell').style.display = 'flex';
       requestAnimationFrame(() => setTimeout(renderDashboard, 80));
+      if (!LS_OK) {
+        setStorageStatus('⚠ 자동저장 불가 · 백업 사용', 'var(--amber-text)');
+      } else if (_hadSaved) {
+        setStorageStatus('✓ 저장된 데이터 불러옴', 'var(--green-text)');
+      } else {
+        setStorageStatus('자동저장 활성', 'var(--text3)');
+      }
     }, 300);
   } else {
     document.getElementById('lock-error').textContent = '비밀번호가 올바르지 않습니다';
@@ -884,15 +897,45 @@ var records = JSON.parse(JSON.stringify(rawData));
 var memberBase = JSON.parse(JSON.stringify(memberBaseDefault));
 var posFilter = '전체';
 
+// localStorage 사용 가능 여부 점검
+var LS_OK = (function(){
+  try {
+    var t = '__ls_test__';
+    localStorage.setItem(t, '1');
+    localStorage.removeItem(t);
+    return true;
+  } catch (e) {
+    console.warn('[상벌점] localStorage 사용 불가:', e && e.message);
+    return false;
+  }
+})();
+
+function setStorageStatus(msg, color) {
+  var el = document.getElementById('storage-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = color || 'var(--text3)';
+}
+
 function saveState() {
+  if (!LS_OK) {
+    setStorageStatus('⚠ 자동저장 불가 · 백업 내보내기 사용', 'var(--amber-text)');
+    return;
+  }
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({ records: records, memberBase: memberBase }));
+    var t = new Date();
+    var hh = String(t.getHours()).padStart(2,'0');
+    var mm = String(t.getMinutes()).padStart(2,'0');
+    setStorageStatus('✓ 저장됨 ' + hh + ':' + mm, 'var(--green-text)');
   } catch (e) {
-    console.error('저장 실패', e);
+    console.error('[상벌점] 저장 실패:', e);
+    setStorageStatus('⚠ 저장 실패 · 콘솔 확인', 'var(--red-text)');
   }
 }
 
 function loadState() {
+  if (!LS_OK) return false;
   try {
     var raw = localStorage.getItem(LS_KEY);
     if (!raw) return false;
@@ -904,9 +947,51 @@ function loadState() {
       return true;
     }
   } catch (e) {
-    console.error('불러오기 실패', e);
+    console.error('[상벌점] 불러오기 실패:', e);
   }
   return false;
+}
+
+// ── JSON 백업 내보내기 / 가져오기 (환경 무관) ──
+function exportData() {
+  var payload = { version: 1, exportedAt: new Date().toISOString(), records: records, memberBase: memberBase };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var d = new Date();
+  var fname = '상벌점_백업_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '_' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0') + '.json';
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  showToast('백업 파일이 다운로드되었습니다');
+}
+
+function importData(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data || !Array.isArray(data.records) || !Array.isArray(data.memberBase)) {
+        alert('올바른 백업 파일이 아닙니다.');
+        return;
+      }
+      if (!confirm('백업 파일의 데이터로 교체하시겠습니까?\n현재 화면의 데이터는 덮어쓰여집니다.\n(이력 ' + data.records.length + '건 · 승무원 ' + data.memberBase.length + '명)')) return;
+      records = data.records;
+      memberBase.length = 0;
+      data.memberBase.forEach(function(m){ memberBase.push(m); });
+      updateNameList();
+      saveState();
+      renderDashboard(); renderMembers(); renderHistory();
+      showToast('백업을 불러왔습니다');
+    } catch (err) {
+      console.error('[상벌점] 가져오기 실패:', err);
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+  input.value = '';
 }
 
 function resetState() {
@@ -921,7 +1006,7 @@ function resetState() {
 }
 
 // 저장된 상태가 있으면 복원
-loadState();
+var _hadSaved = loadState();
 
 // ── 순수 Canvas 차트 엔진 (Chart.js 불필요) ──
 const C = {
