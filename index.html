@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>운항승무원 상벌점 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.0/dist/umd/supabase.js"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -458,20 +459,19 @@
 </head>
 <body>
 
-<!-- Lock screen -->
+<!-- Login screen -->
 <div id="lock-screen">
   <div class="lock-box">
     <div class="lock-icon">🔒</div>
     <div class="lock-title">운항승무원 상벌점 관리</div>
-    <div class="lock-sub">CREW MGMT SYS · RESTRICTED</div>
-    <div class="lock-dots" id="lock-dots">
-      <div class="lock-dot" id="d0"></div>
-      <div class="lock-dot" id="d1"></div>
-      <div class="lock-dot" id="d2"></div>
-      <div class="lock-dot" id="d3"></div>
-    </div>
-    <input class="lock-input" type="password" id="lock-input" maxlength="4" placeholder="····" oninput="onPwInput(this)" onkeydown="if(event.key==='Enter')tryUnlock()">
-    <button class="lock-btn" onclick="tryUnlock()">접속</button>
+    <div class="lock-sub">CREW MGMT SYS · 로그인</div>
+    <input class="lock-input" type="email" id="login-email" placeholder="이메일" autocomplete="username"
+           style="letter-spacing:normal;font-size:14px;text-align:left"
+           onkeydown="if(event.key==='Enter'){document.getElementById('login-pw').focus();}">
+    <input class="lock-input" type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password"
+           style="letter-spacing:normal;font-size:14px;text-align:left"
+           onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="lock-btn" id="login-btn" onclick="tryLogin()">로그인</button>
     <div class="lock-error" id="lock-error"></div>
   </div>
 </div>
@@ -503,6 +503,7 @@
         <button class="add-btn-reset" style="flex:1" onclick="document.getElementById('import-file').click()">⤒ 백업 불러오기</button>
       </div>
       <button class="add-btn-reset" onclick="resetState()">↺ 기본 데이터로 초기화</button>
+      <button class="add-btn-reset" onclick="doLogout()">⤷ 로그아웃</button>
       <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importData(this)">
       <div id="storage-status" style="font-size:10px;color:var(--text3);text-align:center;font-family:'DM Mono',monospace;min-height:14px"></div>
     </div>
@@ -811,50 +812,121 @@
 </div>
 
 <script>
-// ── Password lock ──
-const CORRECT_PW = '7894';
+// ── Supabase 인증 ──
+// 설정값은 아래쪽 'Supabase 클라우드 동기화 설정' 블록의 SB_URL / SB_KEY 사용
+var sbClient = null;       // supabase-js 클라이언트
+var sbLibOk = (typeof supabase !== 'undefined' && supabase && supabase.createClient);
 
-function onPwInput(el) {
-  const v = el.value;
-  for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.toggle('filled', i < v.length);
-  document.getElementById('lock-error').textContent = '';
-  if (v.length === 4) setTimeout(tryUnlock, 120);
-}
-
-function tryUnlock() {
-  const val = document.getElementById('lock-input').value;
-  if (val === CORRECT_PW) {
-    const ls = document.getElementById('lock-screen');
-    ls.style.transition = 'opacity .3s'; ls.style.opacity = '0';
-    setTimeout(() => {
-      ls.style.display = 'none';
-      document.getElementById('main-shell').style.display = 'flex';
-      setStorageStatus(SB_OK ? '☁ 클라우드 불러오는 중…' : '불러오는 중…', 'var(--text3)');
-      // 클라우드 우선 → 실패 시 로컬 백업 유지
-      cloudLoad().then(function(cloudOk){
-        updateNameList();
-        requestAnimationFrame(() => setTimeout(() => {
-          renderDashboard();
-          if (document.getElementById('page-members').classList.contains('active')) renderMembers();
-          if (document.getElementById('page-history').classList.contains('active')) renderHistory();
-        }, 80));
-        if (!SB_OK) {
-          setStorageStatus(LS_OK ? (_hadSaved ? '✓ 로컬 데이터 불러옴' : '자동저장 활성') : '⚠ 자동저장 불가 · 백업 사용', LS_OK ? 'var(--text3)' : 'var(--amber-text)');
-        } else if (cloudOk) {
-          setStorageStatus('☁ 클라우드 데이터 불러옴', 'var(--green-text)');
-        } else {
-          setStorageStatus('⚠ 클라우드 연결 실패 · 로컬 표시 중', 'var(--amber-text)');
-        }
-      });
-    }, 300);
-  } else {
-    document.getElementById('lock-error').textContent = '비밀번호가 올바르지 않습니다';
-    document.getElementById('lock-input').value = '';
-    for (let i = 0; i < 4; i++) document.getElementById('d'+i).classList.remove('filled');
-    document.getElementById('lock-input').focus();
+function initSbClient() {
+  if (sbClient) return sbClient;
+  if (!sbLibOk) return null;
+  try {
+    sbClient = supabase.createClient(SB_URL, SB_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'crew_sb_auth' }
+    });
+  } catch (e) {
+    console.error('[상벌점] Supabase 클라이언트 생성 실패:', e);
+    sbClient = null;
   }
+  return sbClient;
 }
-document.getElementById('lock-input').focus();
+
+// 로그인 화면에서 라이브러리 로드 여부 안내
+function checkLoginReady() {
+  var err = document.getElementById('lock-error');
+  if (!sbLibOk) {
+    err.style.color = 'var(--amber-text)';
+    err.textContent = '인증 모듈을 불러오지 못했습니다. 사내망에서 외부 접속이 막혔을 수 있습니다.';
+    document.getElementById('login-btn').disabled = true;
+    document.getElementById('login-btn').style.opacity = '0.5';
+    console.warn('[상벌점] supabase-js 라이브러리 로드 실패 (CDN 차단 의심).');
+    return false;
+  }
+  return true;
+}
+
+function tryLogin() {
+  if (!checkLoginReady()) return;
+  var email = (document.getElementById('login-email').value || '').trim();
+  var pw = document.getElementById('login-pw').value || '';
+  var err = document.getElementById('lock-error');
+  err.style.color = 'var(--red-text)';
+  if (!email || !pw) { err.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+
+  var btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = '로그인 중…';
+  err.textContent = '';
+
+  var client = initSbClient();
+  if (!client) { err.textContent = '인증 모듈 오류. 새로고침 후 다시 시도하세요.'; btn.disabled=false; btn.textContent='로그인'; return; }
+
+  client.auth.signInWithPassword({ email: email, password: pw })
+    .then(function(res){
+      if (res.error) {
+        console.warn('[상벌점] 로그인 실패:', res.error.message);
+        err.textContent = '로그인 실패: 이메일 또는 비밀번호를 확인하세요.';
+        btn.disabled = false; btn.textContent = '로그인';
+        document.getElementById('login-pw').value = '';
+        return;
+      }
+      enterApp();
+    })
+    .catch(function(e){
+      console.error('[상벌점] 로그인 오류:', e);
+      err.textContent = '로그인 중 오류가 발생했습니다. 네트워크를 확인하세요.';
+      btn.disabled = false; btn.textContent = '로그인';
+    });
+}
+
+// 로그인 성공(또는 기존 세션 확인) 후 앱 진입
+function enterApp() {
+  const ls = document.getElementById('lock-screen');
+  ls.style.transition = 'opacity .3s'; ls.style.opacity = '0';
+  setTimeout(() => {
+    ls.style.display = 'none';
+    document.getElementById('main-shell').style.display = 'flex';
+    setStorageStatus(SB_OK ? '☁ 클라우드 불러오는 중…' : '불러오는 중…', 'var(--text3)');
+    cloudLoad().then(function(cloudOk){
+      updateNameList();
+      requestAnimationFrame(() => setTimeout(() => {
+        renderDashboard();
+        if (document.getElementById('page-members').classList.contains('active')) renderMembers();
+        if (document.getElementById('page-history').classList.contains('active')) renderHistory();
+      }, 80));
+      if (!SB_OK) {
+        setStorageStatus(LS_OK ? (_hadSaved ? '✓ 로컬 데이터 불러옴' : '자동저장 활성') : '⚠ 자동저장 불가 · 백업 사용', LS_OK ? 'var(--text3)' : 'var(--amber-text)');
+      } else if (cloudOk) {
+        setStorageStatus('☁ 클라우드 데이터 불러옴', 'var(--green-text)');
+      } else {
+        setStorageStatus('⚠ 클라우드 연결 실패 · 로컬 표시 중', 'var(--amber-text)');
+      }
+    });
+  }, 300);
+}
+
+// 로그아웃
+function doLogout() {
+  if (!confirm('로그아웃하시겠습니까?')) return;
+  var client = initSbClient();
+  if (client) { client.auth.signOut().finally(function(){ location.reload(); }); }
+  else { location.reload(); }
+}
+
+// 페이지 로드 시: 기존 세션 있으면 자동 진입, 없으면 로그인 화면
+window.addEventListener('load', function(){
+  checkLoginReady();
+  var client = initSbClient();
+  if (!client) { document.getElementById('login-email').focus(); return; }
+  client.auth.getSession().then(function(res){
+    if (res && res.data && res.data.session) {
+      enterApp();          // 이미 로그인된 세션 → 바로 진입
+    } else {
+      document.getElementById('login-email').focus();
+    }
+  }).catch(function(){
+    document.getElementById('login-email').focus();
+  });
+});
 
 // ── 기본 데이터 (초기화용 원본) ──
 const rawData = [
@@ -913,15 +985,17 @@ function sbHeaders() {
   };
 }
 
-// 클라우드에서 데이터 읽기 (성공 시 true)
+// 클라우드에서 데이터 읽기 (성공 시 true) — 로그인 세션으로 요청
 function cloudLoad() {
   if (!SB_OK) return Promise.resolve(false);
-  var url = SB_URL + '/rest/v1/' + SB_TABLE + '?id=eq.' + encodeURIComponent(SB_ROW_ID) + '&select=data';
-  return fetch(url, { headers: sbHeaders() })
-    .then(function(res){ if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-    .then(function(rows){
-      if (Array.isArray(rows) && rows.length && rows[0].data) {
-        var d = rows[0].data;
+  var client = initSbClient();
+  if (!client) return Promise.resolve(false);
+  return client.from(SB_TABLE).select('data').eq('id', SB_ROW_ID).maybeSingle()
+    .then(function(res){
+      if (res.error) throw res.error;
+      var row = res.data;
+      if (row && row.data) {
+        var d = row.data;
         if (Array.isArray(d.records) && Array.isArray(d.memberBase)) {
           // 안전장치: 클라우드 명부가 비어 있으면 화면 기본 데이터 유지 (덮어쓰기 방지)
           if (d.memberBase.length === 0) {
@@ -936,10 +1010,10 @@ function cloudLoad() {
       }
       return false;
     })
-    .catch(function(e){ console.error('[상벌점] 클라우드 불러오기 실패:', e); return false; });
+    .catch(function(e){ console.error('[상벌점] 클라우드 불러오기 실패:', e && e.message ? e.message : e); return false; });
 }
 
-// 클라우드에 데이터 저장 (upsert: 있으면 병합, 없으면 생성 / 디바운스)
+// 클라우드에 데이터 저장 (upsert / 디바운스) — 로그인 세션으로 요청
 function cloudSave() {
   if (!SB_OK) return;
   // 안전장치: 명부가 비어 있으면(데이터 유실 의심) 클라우드 덮어쓰기 차단
@@ -948,35 +1022,27 @@ function cloudSave() {
     setStorageStatus('⚠ 명부 비어있음 · 클라우드 저장 안 함', 'var(--amber-text)');
     return;
   }
+  var client = initSbClient();
+  if (!client) return;
   clearTimeout(sbSaveTimer);
   sbSaveTimer = setTimeout(function(){
-    var url = SB_URL + '/rest/v1/' + SB_TABLE + '?on_conflict=id';
-    var headers = sbHeaders();
-    // upsert: 동일 id 있으면 병합, 응답으로 저장된 행 반환
-    headers['Prefer'] = 'resolution=merge-duplicates,return=representation';
-    var body = JSON.stringify([{
+    client.from(SB_TABLE).upsert({
       id: SB_ROW_ID,
       data: { records: records, memberBase: memberBase },
       updated_at: new Date().toISOString()
-    }]);
-    fetch(url, { method: 'POST', headers: headers, body: body })
+    }, { onConflict: 'id' }).select('id')
       .then(function(res){
-        return res.text().then(function(txt){
-          if (!res.ok) throw new Error('HTTP ' + res.status + ' · ' + txt);
-          // 응답 본문에 저장된 행이 돌아왔는지 확인 (조용한 실패 방지)
-          var rows = [];
-          try { rows = JSON.parse(txt); } catch (e) {}
-          if (!Array.isArray(rows) || rows.length === 0) {
-            throw new Error('저장 요청이 반영되지 않았습니다 (0행). RLS 정책을 확인하세요.');
-          }
-          var t = new Date();
-          var hh = String(t.getHours()).padStart(2,'0');
-          var mm = String(t.getMinutes()).padStart(2,'0');
-          setStorageStatus('☁ 클라우드 저장됨 ' + hh + ':' + mm, 'var(--green-text)');
-        });
+        if (res.error) throw res.error;
+        if (!res.data || res.data.length === 0) {
+          throw new Error('저장이 반영되지 않았습니다 (0행). 로그인 상태/정책을 확인하세요.');
+        }
+        var t = new Date();
+        var hh = String(t.getHours()).padStart(2,'0');
+        var mm = String(t.getMinutes()).padStart(2,'0');
+        setStorageStatus('☁ 클라우드 저장됨 ' + hh + ':' + mm, 'var(--green-text)');
       })
       .catch(function(e){
-        console.error('[상벌점] 클라우드 저장 실패:', e);
+        console.error('[상벌점] 클라우드 저장 실패:', e && e.message ? e.message : e);
         setStorageStatus('⚠ 클라우드 저장 실패 · 로컬은 저장됨', 'var(--amber-text)');
       });
   }, 400);
