@@ -829,14 +829,23 @@ function tryUnlock() {
     setTimeout(() => {
       ls.style.display = 'none';
       document.getElementById('main-shell').style.display = 'flex';
-      requestAnimationFrame(() => setTimeout(renderDashboard, 80));
-      if (!LS_OK) {
-        setStorageStatus('⚠ 자동저장 불가 · 백업 사용', 'var(--amber-text)');
-      } else if (_hadSaved) {
-        setStorageStatus('✓ 저장된 데이터 불러옴', 'var(--green-text)');
-      } else {
-        setStorageStatus('자동저장 활성', 'var(--text3)');
-      }
+      setStorageStatus(SB_OK ? '☁ 클라우드 불러오는 중…' : '불러오는 중…', 'var(--text3)');
+      // 클라우드 우선 → 실패 시 로컬 백업 유지
+      cloudLoad().then(function(cloudOk){
+        updateNameList();
+        requestAnimationFrame(() => setTimeout(() => {
+          renderDashboard();
+          if (document.getElementById('page-members').classList.contains('active')) renderMembers();
+          if (document.getElementById('page-history').classList.contains('active')) renderHistory();
+        }, 80));
+        if (!SB_OK) {
+          setStorageStatus(LS_OK ? (_hadSaved ? '✓ 로컬 데이터 불러옴' : '자동저장 활성') : '⚠ 자동저장 불가 · 백업 사용', LS_OK ? 'var(--text3)' : 'var(--amber-text)');
+        } else if (cloudOk) {
+          setStorageStatus('☁ 클라우드 데이터 불러옴', 'var(--green-text)');
+        } else {
+          setStorageStatus('⚠ 클라우드 연결 실패 · 로컬 표시 중', 'var(--amber-text)');
+        }
+      });
     }, 300);
   } else {
     document.getElementById('lock-error').textContent = '비밀번호가 올바르지 않습니다';
@@ -889,6 +898,80 @@ const memberBaseDefault = [
   {no:175,pos:"부기장",name:"허완",id:"P233049",joinYear:"",note:"",memo:""},{no:176,pos:"부기장",name:"현경원",id:"P253020",joinYear:"",note:"",memo:""},{no:177,pos:"부기장",name:"홍경수",id:"P253008",joinYear:"",note:"",memo:""},{no:178,pos:"부기장",name:"홍인식",id:"P233032",joinYear:"",note:"",memo:""},{no:179,pos:"부기장",name:"홍진영",id:"P223013",joinYear:"",note:"",memo:""},{no:180,pos:"부기장",name:"황성민",id:"P243019",joinYear:"",note:"",memo:""}
 ];
 
+// ── Supabase 클라우드 동기화 설정 ──
+var SB_URL = 'https://apwwbjkjeefpwajkpuxp.supabase.co';
+var SB_KEY = 'sb_publishable_TZYRnDeUPpbHagRnrpWWIA_nSaWoNQ5';
+var SB_ROW_ID = 'crew';          // app_state 테이블의 행 id
+var SB_TABLE = 'app_state';
+var SB_OK = !!(SB_URL && SB_KEY); // 설정값이 있으면 클라우드 사용
+var sbSaveTimer = null;           // 저장 디바운스 타이머
+
+function sbHeaders() {
+  return {
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json'
+  };
+}
+
+// 클라우드에서 데이터 읽기 (성공 시 true)
+function cloudLoad() {
+  if (!SB_OK) return Promise.resolve(false);
+  var url = SB_URL + '/rest/v1/' + SB_TABLE + '?id=eq.' + encodeURIComponent(SB_ROW_ID) + '&select=data';
+  return fetch(url, { headers: sbHeaders() })
+    .then(function(res){ if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(rows){
+      if (Array.isArray(rows) && rows.length && rows[0].data) {
+        var d = rows[0].data;
+        if (Array.isArray(d.records) && Array.isArray(d.memberBase)) {
+          records = d.records;
+          memberBase.length = 0;
+          d.memberBase.forEach(function(m){ memberBase.push(m); });
+          return true;
+        }
+      }
+      return false;
+    })
+    .catch(function(e){ console.error('[상벌점] 클라우드 불러오기 실패:', e); return false; });
+}
+
+// 클라우드에 데이터 저장 (upsert: 있으면 병합, 없으면 생성 / 디바운스)
+function cloudSave() {
+  if (!SB_OK) return;
+  clearTimeout(sbSaveTimer);
+  sbSaveTimer = setTimeout(function(){
+    var url = SB_URL + '/rest/v1/' + SB_TABLE + '?on_conflict=id';
+    var headers = sbHeaders();
+    // upsert: 동일 id 있으면 병합, 응답으로 저장된 행 반환
+    headers['Prefer'] = 'resolution=merge-duplicates,return=representation';
+    var body = JSON.stringify([{
+      id: SB_ROW_ID,
+      data: { records: records, memberBase: memberBase },
+      updated_at: new Date().toISOString()
+    }]);
+    fetch(url, { method: 'POST', headers: headers, body: body })
+      .then(function(res){
+        return res.text().then(function(txt){
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' · ' + txt);
+          // 응답 본문에 저장된 행이 돌아왔는지 확인 (조용한 실패 방지)
+          var rows = [];
+          try { rows = JSON.parse(txt); } catch (e) {}
+          if (!Array.isArray(rows) || rows.length === 0) {
+            throw new Error('저장 요청이 반영되지 않았습니다 (0행). RLS 정책을 확인하세요.');
+          }
+          var t = new Date();
+          var hh = String(t.getHours()).padStart(2,'0');
+          var mm = String(t.getMinutes()).padStart(2,'0');
+          setStorageStatus('☁ 클라우드 저장됨 ' + hh + ':' + mm, 'var(--green-text)');
+        });
+      })
+      .catch(function(e){
+        console.error('[상벌점] 클라우드 저장 실패:', e);
+        setStorageStatus('⚠ 클라우드 저장 실패 · 로컬은 저장됨', 'var(--amber-text)');
+      });
+  }, 400);
+}
+
 // ── localStorage 영속화 ──
 var LS_KEY = 'crew_merit_demerit_v1';
 
@@ -918,20 +1001,22 @@ function setStorageStatus(msg, color) {
 }
 
 function saveState() {
-  if (!LS_OK) {
+  // 1) 로컬 저장 (가능한 경우)
+  if (LS_OK) {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ records: records, memberBase: memberBase }));
+      var t = new Date();
+      var hh = String(t.getHours()).padStart(2,'0');
+      var mm = String(t.getMinutes()).padStart(2,'0');
+      setStorageStatus((SB_OK ? '☁ ' : '✓ ') + '저장 중 ' + hh + ':' + mm, 'var(--text3)');
+    } catch (e) {
+      console.error('[상벌점] 로컬 저장 실패:', e);
+    }
+  } else if (!SB_OK) {
     setStorageStatus('⚠ 자동저장 불가 · 백업 내보내기 사용', 'var(--amber-text)');
-    return;
   }
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify({ records: records, memberBase: memberBase }));
-    var t = new Date();
-    var hh = String(t.getHours()).padStart(2,'0');
-    var mm = String(t.getMinutes()).padStart(2,'0');
-    setStorageStatus('✓ 저장됨 ' + hh + ':' + mm, 'var(--green-text)');
-  } catch (e) {
-    console.error('[상벌점] 저장 실패:', e);
-    setStorageStatus('⚠ 저장 실패 · 콘솔 확인', 'var(--red-text)');
-  }
+  // 2) 클라우드 저장 (설정된 경우)
+  cloudSave();
 }
 
 function loadState() {
