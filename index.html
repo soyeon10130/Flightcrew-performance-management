@@ -118,6 +118,20 @@
     text-align: center;
   }
   .add-btn-secondary:hover { background: rgba(155,114,247,0.22); border-color: rgba(155,114,247,0.4); }
+  .add-btn-reset {
+    width: 100%;
+    padding: 8px 14px;
+    background: transparent;
+    color: var(--text3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all .15s;
+    text-align: center;
+  }
+  .add-btn-reset:hover { background: var(--bg3); color: var(--red-text); border-color: rgba(224,82,82,0.3); }
 
   .main { flex: 1; overflow-y: auto; padding: 28px 32px; }
 
@@ -484,6 +498,7 @@
     <div class="sidebar-bottom">
       <button class="add-btn" onclick="openAddModal()">+ 상벌점 기록 추가</button>
       <button class="add-btn-secondary" onclick="openNewMemberModal()">+ 신규 승무원 등록</button>
+      <button class="add-btn-reset" onclick="resetState()">↺ 기본 데이터로 초기화</button>
     </div>
   </aside>
 
@@ -782,6 +797,7 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-danger" style="margin-right:auto;font-size:13px;padding:8px 14px" onclick="deleteRecord()">이력 삭제</button>
       <button class="btn btn-ghost" onclick="closeModal('edit-modal')">취소</button>
       <button class="btn btn-primary" onclick="saveEdit()">저장</button>
     </div>
@@ -807,7 +823,6 @@ function tryUnlock() {
     setTimeout(() => {
       ls.style.display = 'none';
       document.getElementById('main-shell').style.display = 'flex';
-      // ★ 수정: requestAnimationFrame + setTimeout으로 canvas가 완전히 렌더링된 후 차트 초기화
       requestAnimationFrame(() => setTimeout(renderDashboard, 80));
     }, 300);
   } else {
@@ -819,7 +834,7 @@ function tryUnlock() {
 }
 document.getElementById('lock-input').focus();
 
-// ── Data ──
+// ── 기본 데이터 (초기화용 원본) ──
 const rawData = [
   {year:2023,date:"2023-09-20",name:"김효승",pos:"부기장",type:"벌점",score:1,reason:"9/20일 YP101 Late Show up으로 인한 상벌협의회 회부"},
   {year:2024,date:"2024-02-14",name:"이장영",pos:"부기장",type:"벌점",score:3,reason:"MISSED FLIGHT 로 인한 근무 규정 미준수"},
@@ -839,7 +854,7 @@ const rawData = [
   {year:2026,date:"2026-03-10",name:"김지호",pos:"부기장",type:"벌점",score:3,reason:"3월 10일 621편 Missed Flight 발생"}
 ];
 
-const memberBase = [
+const memberBaseDefault = [
   {no:1,pos:"기장",name:"강달용",id:"P213011",joinYear:"",note:"",memo:""},{no:2,pos:"기장",name:"강상진",id:"P243039",joinYear:"",note:"",memo:""},{no:3,pos:"기장",name:"강성준",id:"P243002",joinYear:"",note:"",memo:""},{no:4,pos:"기장",name:"강호준",id:"P243027",joinYear:"",note:"",memo:""},{no:5,pos:"기장",name:"강흥건",id:"P233011",joinYear:"",note:"",memo:""},{no:6,pos:"기장",name:"경진수",id:"P203008",joinYear:"",note:"",memo:""},{no:7,pos:"기장",name:"고희덕",id:"P213001",joinYear:"",note:"",memo:""},{no:8,pos:"기장",name:"김경석",id:"P223006",joinYear:"",note:"",memo:""},{no:9,pos:"기장",name:"김경수",id:"P223005",joinYear:"",note:"",memo:""},{no:10,pos:"기장",name:"김길주",id:"P243040",joinYear:"",note:"",memo:""},
   {no:11,pos:"기장",name:"김남호",id:"P243041",joinYear:"",note:"",memo:""},{no:12,pos:"기장",name:"김동섭",id:"P203018",joinYear:"",note:"",memo:""},{no:13,pos:"기장",name:"김동환",id:"P213002",joinYear:"",note:"",memo:""},{no:14,pos:"기장",name:"김선용",id:"P233033",joinYear:"",note:"",memo:""},{no:15,pos:"기장",name:"김세훈",id:"P243003",joinYear:"",note:"",memo:""},{no:16,pos:"기장",name:"김영길",id:"P243004",joinYear:"",note:"",memo:""},{no:17,pos:"기장",name:"김영준",id:"P233012",joinYear:"",note:"",memo:""},{no:18,pos:"기장",name:"김영필",id:"P203006",joinYear:"",note:"",memo:""},{no:19,pos:"기장",name:"김용식",id:"P233034",joinYear:"",note:"",memo:""},{no:20,pos:"기장",name:"김은수",id:"P203015",joinYear:"",note:"",memo:""},
   {no:21,pos:"기장",name:"김일관",id:"P243005",joinYear:"",note:"",memo:""},{no:22,pos:"기장",name:"김지웅",id:"P203012",joinYear:"",note:"",memo:""},{no:23,pos:"기장",name:"김진환",id:"P203022",joinYear:"",note:"",memo:""},{no:24,pos:"기장",name:"김치윤",id:"P243006",joinYear:"",note:"",memo:""},{no:25,pos:"기장",name:"김홍진",id:"P233013",joinYear:"",note:"",memo:""},{no:26,pos:"기장",name:"김훈A",id:"P213003",joinYear:"",note:"",memo:""},{no:27,pos:"기장",name:"김훈B",id:"P243007",joinYear:"",note:"",memo:""},{no:28,pos:"기장",name:"나종석",id:"P243042",joinYear:"",note:"",memo:""},{no:29,pos:"기장",name:"남궁명",id:"P233014",joinYear:"",note:"",memo:""},{no:30,pos:"기장",name:"노영호",id:"P243028",joinYear:"",note:"",memo:""},
@@ -861,8 +876,52 @@ const memberBase = [
   {no:175,pos:"부기장",name:"허완",id:"P233049",joinYear:"",note:"",memo:""},{no:176,pos:"부기장",name:"현경원",id:"P253020",joinYear:"",note:"",memo:""},{no:177,pos:"부기장",name:"홍경수",id:"P253008",joinYear:"",note:"",memo:""},{no:178,pos:"부기장",name:"홍인식",id:"P233032",joinYear:"",note:"",memo:""},{no:179,pos:"부기장",name:"홍진영",id:"P223013",joinYear:"",note:"",memo:""},{no:180,pos:"부기장",name:"황성민",id:"P243019",joinYear:"",note:"",memo:""}
 ];
 
-let records = [...rawData];
-let posFilter = '전체';
+// ── localStorage 영속화 ──
+var LS_KEY = 'crew_merit_demerit_v1';
+
+// 작업용 데이터 (기본값으로 초기화 후, 저장된 상태가 있으면 덮어씀)
+var records = JSON.parse(JSON.stringify(rawData));
+var memberBase = JSON.parse(JSON.stringify(memberBaseDefault));
+var posFilter = '전체';
+
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ records: records, memberBase: memberBase }));
+  } catch (e) {
+    console.error('저장 실패', e);
+  }
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    var data = JSON.parse(raw);
+    if (data && Array.isArray(data.records) && Array.isArray(data.memberBase)) {
+      records = data.records;
+      memberBase.length = 0;
+      data.memberBase.forEach(function(m){ memberBase.push(m); });
+      return true;
+    }
+  } catch (e) {
+    console.error('불러오기 실패', e);
+  }
+  return false;
+}
+
+function resetState() {
+  if (!confirm('모든 변경 사항을 삭제하고 기본 데이터로 초기화하시겠습니까?\n(추가/수정/삭제한 내용이 모두 사라집니다)')) return;
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  records = JSON.parse(JSON.stringify(rawData));
+  memberBase.length = 0;
+  JSON.parse(JSON.stringify(memberBaseDefault)).forEach(function(m){ memberBase.push(m); });
+  updateNameList();
+  renderDashboard(); renderMembers(); renderHistory();
+  showToast('기본 데이터로 초기화되었습니다');
+}
+
+// 저장된 상태가 있으면 복원
+loadState();
 
 // ── 순수 Canvas 차트 엔진 (Chart.js 불필요) ──
 const C = {
@@ -900,12 +959,10 @@ const C = {
       ctx.fill();
       angle += sweep;
     });
-    // inner hole
     ctx.beginPath();
     ctx.arc(cx, cy, inner, 0, Math.PI * 2);
     ctx.fillStyle = '#161b27';
     ctx.fill();
-    // center label
     ctx.fillStyle = '#e8eaf0';
     ctx.font = 'bold 14px DM Mono, monospace';
     ctx.textAlign = 'center';
@@ -921,7 +978,6 @@ const C = {
     const chartH = h - pad.t - pad.b;
     const stacked = opts.stacked || false;
 
-    // compute max
     let maxVal = 0;
     if (stacked) {
       labels.forEach((_, i) => {
@@ -935,7 +991,6 @@ const C = {
     const step = maxVal <= 3 ? 1 : maxVal <= 6 ? 2 : Math.ceil(maxVal / 4);
     const gridMax = Math.ceil(maxVal / step) * step;
 
-    // grid lines
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 0.5;
     for (let v = 0; v <= gridMax; v += step) {
@@ -948,7 +1003,6 @@ const C = {
       ctx.fillText(v, pad.l - 4, y);
     }
 
-    // bars
     const n = labels.length;
     const groupW = chartW / n;
     const dsCount = datasets.length;
@@ -984,7 +1038,6 @@ const C = {
           ctx.fill();
         });
       }
-      // x label
       ctx.fillStyle = '#8b93a8';
       ctx.font = '10px Noto Sans KR, sans-serif';
       ctx.textAlign = 'center';
@@ -993,7 +1046,6 @@ const C = {
       ctx.fillText(shortLbl, gx + groupW / 2, pad.t + chartH + 6);
     });
 
-    // legend
     if (opts.legend && datasets.length > 1) {
       let lx = pad.l;
       datasets.forEach(d => {
@@ -1105,6 +1157,7 @@ function addNewMember() {
   memberBase.push({ no: newNo, pos, name, id, joinYear, note, memo });
   memberBase.forEach((m, i) => m.no = i + 1);
   updateNameList();
+  saveState();
 
   closeModal('new-member-modal');
   showToast(`✦ ${name} 승무원이 명부에 등록되었습니다`);
@@ -1194,14 +1247,12 @@ function renderCharts() {
   const totalPen = filtered.filter(r=>r.type==='벌점').reduce((a,r)=>a+r.score,0);
   const totalRew = filtered.filter(r=>r.type==='상점').reduce((a,r)=>a+r.score,0);
 
-  // 유형별 현황 (도넛)
   C.doughnut('typeChart', totalPen, totalRew);
   document.getElementById('type-legend').innerHTML = `
     <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#e05252"></span>벌점 ${totalPen}점</span>
     <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#4caf7d"></span>상점 ${totalRew}점</span>
   `;
 
-  // 연도별 추이
   const yf = document.getElementById('dash-year').value;
   const pf = document.getElementById('dash-pos').value;
   document.getElementById('year-chart-title').textContent =
@@ -1238,7 +1289,6 @@ function renderCharts() {
     }
   }
 
-  // 벌점 상위 인원
   const scoreMap = {};
   filtered.filter(r=>r.type==='벌점').forEach(r => { scoreMap[r.name] = (scoreMap[r.name]||0) + r.score; });
   const top = Object.entries(scoreMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
@@ -1371,8 +1421,22 @@ function saveEdit() {
   if (!name || !date || !reason) { alert('이름, 일자, 안건을 모두 입력해주세요.'); return; }
   records[editIdx] = {year, date, name, pos, type, score, reason};
   editIdx = -1;
+  saveState();
   closeModal('edit-modal');
   renderDashboard(); renderHistory(); renderMembers();
+  showToast('기록이 수정되었습니다');
+}
+
+function deleteRecord() {
+  if (editIdx < 0) return;
+  const r = records[editIdx];
+  if (!confirm(`${r.name} (${r.date}) 이력을 삭제하시겠습니까?`)) return;
+  records.splice(editIdx, 1);
+  editIdx = -1;
+  saveState();
+  closeModal('edit-modal');
+  renderDashboard(); renderHistory(); renderMembers();
+  showToast('이력이 삭제되었습니다');
 }
 
 // ── Page switching ──
@@ -1383,7 +1447,6 @@ function switchPage(name, el) {
   if (el) el.classList.add('active');
   if (name === 'members') renderMembers();
   if (name === 'history') { updateYearFilter(); renderHistory(); }
-  // ★ 대시보드 탭으로 돌아올 때도 차트 재렌더링
   if (name === 'dashboard') requestAnimationFrame(() => setTimeout(renderDashboard, 50));
 }
 
@@ -1406,6 +1469,7 @@ function addRecord() {
   const reason = document.getElementById('f-reason').value.trim();
   if (!name || !date || !reason) { alert('이름, 일자, 안건을 모두 입력해주세요.'); return; }
   records.push({year,date,name,pos,type,score,reason});
+  saveState();
   closeModal('add-modal');
   document.getElementById('f-name').value = '';
   document.getElementById('f-reason').value = '';
@@ -1422,6 +1486,7 @@ function deleteMember(idx, name) {
     if (records[i].name === name) records.splice(i, 1);
   }
   updateNameList();
+  saveState();
   renderDashboard(); renderMembers(); renderHistory();
 }
 
@@ -1457,7 +1522,6 @@ function openPersonModal(name, pos, id) {
   document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
 });
 
-// 창 크기 변경 시 차트 재렌더링
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
