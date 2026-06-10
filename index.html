@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>운항승무원 상벌점 관리</title>
+<title>에어프레미아 운항승무원 상벌점 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.0/dist/umd/supabase.js"></script>
 <style>
@@ -463,7 +463,7 @@
 <div id="lock-screen">
   <div class="lock-box">
     <div class="lock-icon">🔒</div>
-    <div class="lock-title">YP 운항승무원 상벌점 관리</div>
+    <div class="lock-title">에어프레미아 운항승무원 상벌점 관리</div>
     <div class="lock-sub">CREW MGMT SYS · 로그인</div>
     <input class="lock-input" type="email" id="login-email" placeholder="이메일" autocomplete="username"
            style="letter-spacing:normal;font-size:14px;text-align:left"
@@ -515,7 +515,7 @@
     <div id="page-dashboard" class="page active">
       <div class="page-header">
         <div>
-          <div class="page-title">YP 운항승무원 상벌점 현황</div>
+          <div class="page-title">에어프레미아 운항승무원 상벌점 현황</div>
           <div class="page-date" id="today-date"></div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -813,8 +813,7 @@
 
 <script>
 // ── Supabase 인증 ──
-// 설정값은 아래쪽 'Supabase 클라우드 동기화 설정' 블록의 SB_URL / SB_KEY 사용
-var sbClient = null;       // supabase-js 클라이언트
+var sbClient = null;
 var sbLibOk = (typeof supabase !== 'undefined' && supabase && supabase.createClient);
 
 function initSbClient() {
@@ -831,7 +830,6 @@ function initSbClient() {
   return sbClient;
 }
 
-// 로그인 화면에서 라이브러리 로드 여부 안내
 function checkLoginReady() {
   var err = document.getElementById('lock-error');
   if (!sbLibOk) {
@@ -878,7 +876,6 @@ function tryLogin() {
     });
 }
 
-// 로그인 성공(또는 기존 세션 확인) 후 앱 진입
 function enterApp() {
   const ls = document.getElementById('lock-screen');
   ls.style.transition = 'opacity .3s'; ls.style.opacity = '0';
@@ -904,7 +901,6 @@ function enterApp() {
   }, 300);
 }
 
-// 로그아웃
 function doLogout() {
   if (!confirm('로그아웃하시겠습니까?')) return;
   var client = initSbClient();
@@ -912,14 +908,13 @@ function doLogout() {
   else { location.reload(); }
 }
 
-// 페이지 로드 시: 기존 세션 있으면 자동 진입, 없으면 로그인 화면
 window.addEventListener('load', function(){
   checkLoginReady();
   var client = initSbClient();
   if (!client) { document.getElementById('login-email').focus(); return; }
   client.auth.getSession().then(function(res){
     if (res && res.data && res.data.session) {
-      enterApp();          // 이미 로그인된 세션 → 바로 진입
+      enterApp();
     } else {
       document.getElementById('login-email').focus();
     }
@@ -972,10 +967,10 @@ const memberBaseDefault = [
 // ── Supabase 클라우드 동기화 설정 ──
 var SB_URL = 'https://apwwbjkjeefpwajkpuxp.supabase.co';
 var SB_KEY = 'sb_publishable_TZYRnDeUPpbHagRnrpWWIA_nSaWoNQ5';
-var SB_ROW_ID = 'crew';          // app_state 테이블의 행 id
+var SB_ROW_ID = 'crew';
 var SB_TABLE = 'app_state';
-var SB_OK = !!(SB_URL && SB_KEY); // 설정값이 있으면 클라우드 사용
-var sbSaveTimer = null;           // 저장 디바운스 타이머
+var SB_OK = !!(SB_URL && SB_KEY);
+var sbSaveTimer = null;
 
 function sbHeaders() {
   return {
@@ -985,7 +980,6 @@ function sbHeaders() {
   };
 }
 
-// 클라우드에서 데이터 읽기 (성공 시 true) — 로그인 세션으로 요청
 function cloudLoad() {
   if (!SB_OK) return Promise.resolve(false);
   var client = initSbClient();
@@ -997,7 +991,6 @@ function cloudLoad() {
       if (row && row.data) {
         var d = row.data;
         if (Array.isArray(d.records) && Array.isArray(d.memberBase)) {
-          // 안전장치: 클라우드 명부가 비어 있으면 화면 기본 데이터 유지 (덮어쓰기 방지)
           if (d.memberBase.length === 0) {
             console.warn('[상벌점] 클라우드 명부가 비어 있어 화면 기본 데이터를 유지합니다.');
             return false;
@@ -1013,10 +1006,8 @@ function cloudLoad() {
     .catch(function(e){ console.error('[상벌점] 클라우드 불러오기 실패:', e && e.message ? e.message : e); return false; });
 }
 
-// 클라우드에 데이터 저장 (upsert / 디바운스) — 로그인 세션으로 요청
 function cloudSave() {
   if (!SB_OK) return;
-  // 안전장치: 명부가 비어 있으면(데이터 유실 의심) 클라우드 덮어쓰기 차단
   if (!Array.isArray(memberBase) || memberBase.length === 0) {
     console.warn('[상벌점] 명부가 비어 있어 클라우드 저장을 건너뜁니다 (데이터 보호).');
     setStorageStatus('⚠ 명부 비어있음 · 클라우드 저장 안 함', 'var(--amber-text)');
@@ -1051,12 +1042,10 @@ function cloudSave() {
 // ── localStorage 영속화 ──
 var LS_KEY = 'crew_merit_demerit_v1';
 
-// 작업용 데이터 (기본값으로 초기화 후, 저장된 상태가 있으면 덮어씀)
 var records = JSON.parse(JSON.stringify(rawData));
 var memberBase = JSON.parse(JSON.stringify(memberBaseDefault));
 var posFilter = '전체';
 
-// localStorage 사용 가능 여부 점검
 var LS_OK = (function(){
   try {
     var t = '__ls_test__';
@@ -1077,7 +1066,6 @@ function setStorageStatus(msg, color) {
 }
 
 function saveState() {
-  // 1) 로컬 저장 (가능한 경우)
   if (LS_OK) {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({ records: records, memberBase: memberBase }));
@@ -1091,7 +1079,6 @@ function saveState() {
   } else if (!SB_OK) {
     setStorageStatus('⚠ 자동저장 불가 · 백업 내보내기 사용', 'var(--amber-text)');
   }
-  // 2) 클라우드 저장 (설정된 경우)
   cloudSave();
 }
 
@@ -1113,7 +1100,6 @@ function loadState() {
   return false;
 }
 
-// ── JSON 백업 내보내기 / 가져오기 (환경 무관) ──
 function exportData() {
   var payload = { version: 1, exportedAt: new Date().toISOString(), records: records, memberBase: memberBase };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1160,7 +1146,7 @@ var RESET_PW = 'lo@airpremia.com';
 function resetState() {
   if (!confirm('정말 초기화하시겠습니까?\n\n모든 데이터를 기본값으로 되돌립니다.\n추가·수정·삭제한 내용이 모두 사라지며, 되돌릴 수 없습니다.\n(클라우드 데이터도 함께 초기화됩니다)')) return;
   var pw = prompt('초기화를 진행하려면 확인용 비밀번호를 입력하세요.');
-  if (pw === null) return; // 취소
+  if (pw === null) return;
   if (pw.trim() !== RESET_PW) {
     alert('비밀번호가 일치하지 않습니다. 초기화가 취소되었습니다.');
     return;
@@ -1170,15 +1156,14 @@ function resetState() {
   memberBase.length = 0;
   JSON.parse(JSON.stringify(memberBaseDefault)).forEach(function(m){ memberBase.push(m); });
   updateNameList();
-  saveState(); // 로컬 + 클라우드에 초기화 결과 반영
+  saveState();
   renderDashboard(); renderMembers(); renderHistory();
   showToast('기본 데이터로 초기화되었습니다');
 }
 
-// 저장된 상태가 있으면 복원
 var _hadSaved = loadState();
 
-// ── 순수 Canvas 차트 엔진 (Chart.js 불필요) ──
+// ── 순수 Canvas 차트 엔진 ──
 const C = {
   clear(id) {
     const el = document.getElementById(id);
@@ -1329,7 +1314,6 @@ function updateNameList() {
   document.getElementById('name-list').innerHTML = memberBase.map(m=>`<option value="${m.name}">`).join('');
 }
 
-// ── Toast ──
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1338,7 +1322,6 @@ function showToast(msg, type='success') {
   setTimeout(()=>t.classList.remove('show'), 2800);
 }
 
-// ── ID Preview & Auto-gen ──
 function updateIdPreview() {
   const idVal = document.getElementById('nm-id').value.trim();
   const preview = document.getElementById('id-preview');
@@ -1373,7 +1356,6 @@ function autoGenId() {
   updateIdPreview();
 }
 
-// ── New Member ──
 function openNewMemberModal() {
   document.getElementById('nm-name').value = '';
   document.getElementById('nm-pos').value = '부기장';
@@ -1423,7 +1405,6 @@ function addNewMember() {
   renderDashboard();
 }
 
-// ── Score calculations ──
 function getScores() {
   const s = {};
   records.forEach(r => {
@@ -1447,7 +1428,6 @@ function scoreColor(t) {
   return 'var(--amber-text)';
 }
 
-// ── Dashboard filters ──
 function getDashFiltered() {
   const yf = document.getElementById('dash-year').value;
   const pf = document.getElementById('dash-pos').value;
@@ -1470,7 +1450,6 @@ function updateDashYearFilter() {
   if ([...sel.options].some(o=>o.value===cur)) sel.value = cur;
 }
 
-// ── Dashboard ──
 function renderDashboard() {
   updateDashYearFilter();
   renderMetrics();
@@ -1565,7 +1544,6 @@ function renderRecent() {
     : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">해당 조건의 이력이 없습니다</td></tr>';
 }
 
-// ── Members ──
 function filterPos(p, el) {
   posFilter = p;
   document.querySelectorAll('#pos-tabs .view-tab').forEach(t=>t.classList.remove('active'));
@@ -1612,7 +1590,6 @@ function renderMembers() {
   }).join('');
 }
 
-// ── History ──
 function updateYearFilter() {
   const years = [...new Set(records.map(r=>r.year))].sort();
   const sel = document.getElementById('hist-year');
@@ -1648,7 +1625,6 @@ function renderHistory() {
     : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">해당 조건의 이력이 없습니다</td></tr>';
 }
 
-// ── Edit record ──
 let editIdx = -1;
 
 function openEditModal(idx) {
@@ -1694,7 +1670,6 @@ function deleteRecord() {
   showToast('이력이 삭제되었습니다');
 }
 
-// ── Page switching ──
 function switchPage(name, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -1705,7 +1680,6 @@ function switchPage(name, el) {
   if (name === 'dashboard') requestAnimationFrame(() => setTimeout(renderDashboard, 50));
 }
 
-// ── Modals ──
 function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -1732,7 +1706,6 @@ function addRecord() {
   showToast(`${type} 기록이 추가되었습니다`);
 }
 
-// ── Delete member ──
 function deleteMember(idx, name) {
   if (!confirm(`${name} 승무원을 명부에서 삭제하시겠습니까?\n(해당 승무원의 이력도 함께 삭제됩니다)`)) return;
   memberBase.splice(idx, 1);
